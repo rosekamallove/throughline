@@ -63,11 +63,11 @@ export function ThumbnailPackaging({
   return (
     <div
       className={cn(
-        "@container flex aspect-video items-center justify-center rounded-thumb border border-dashed border-ghost-border bg-ghost-bg",
+        "@container flex aspect-video items-center justify-center rounded-thumb border border-dashed border-border bg-muted",
         className,
       )}
     >
-      <Lightbulb className="size-[8cqw] text-sub2" />
+      <Lightbulb className="size-[8cqw] text-muted-foreground" />
     </div>
   );
 }

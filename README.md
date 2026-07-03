@@ -7,8 +7,9 @@ runtime, so you write to a length, not a word count.
 
 ## Stack
 
-Next.js 16 (App Router) · React 19 · Tailwind v4 + shadcn/ui · tRPC v11 +
-TanStack Query · Drizzle + Postgres · Better Auth (email/pw + Google) · dnd-kit
+Next.js 16 (App Router) · React 19 · Tailwind v4 + shadcn/ui (radix-maia
+preset) · Plate (script editor) · tRPC v11 + TanStack Query · Drizzle +
+Postgres · Better Auth (email/pw + Google) · dnd-kit
 
 ## Getting started
 
@@ -37,11 +38,20 @@ an account; everyone else gets "Private beta".
 
 ## Theming
 
-All theming lives in `src/app/globals.css`: raw palettes per `data-theme`
-(`yt-dark`, `yt-light`) → shadcn semantic tokens → `@theme inline` utilities.
-Components use semantic tokens only — never `dark:` variants or raw hex.
-A future "minimal" theme is a new palette block plus a `shell` branch in
-`src/lib/themes.ts` / `AppShell`.
+`src/app/globals.css` carries the shadcn **radix-maia** preset (`b4gy472rQ`):
+light/dark palettes via the `.dark` class (next-themes, system-aware), mapped
+through `@theme inline`. Components use semantic tokens (`bg-card`,
+`text-muted-foreground`, …). The only custom tokens are product content —
+pipeline stage colors, beat-kind colors, and the thumbnail highlight — which
+stay constant across themes so packaging always reads the same.
+
+## Script editor
+
+Each beat is a [Plate](https://platejs.org) editor (basic blocks + marks,
+installed via Plate's shadcn registry into `src/components/editor/` and
+`src/components/ui/*-node.tsx`). Rich content lives in `beats.content`
+(jsonb); `beats.text` is a plain-text mirror kept in sync on every autosave
+and used for word counts / runtime math.
 
 ## Commands
 

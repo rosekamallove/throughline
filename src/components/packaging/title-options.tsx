@@ -36,7 +36,7 @@ export function TitleOptions({
             key={v.id}
             className={cn(
               "group flex items-center gap-3 rounded-xl border px-4 py-3 transition-colors",
-              v.isSelected ? "border-primary/60 bg-surface" : "border-border hover:bg-hover/50",
+              v.isSelected ? "border-primary/60 bg-card" : "border-border hover:bg-accent/50",
             )}
           >
             <RadioGroupItem value={v.id} id={`title-${v.id}`} />
@@ -47,7 +47,7 @@ export function TitleOptions({
               {v.title}
             </Label>
             {v.estCtr != null && (
-              <span className="whitespace-nowrap font-mono text-[11px] text-sub">
+              <span className="whitespace-nowrap font-mono text-[11px] text-muted-foreground">
                 {v.estCtr}% CTR
               </span>
             )}
@@ -57,7 +57,7 @@ export function TitleOptions({
                 onClick={() => onDelete(v.id)}
                 className="opacity-0 transition-opacity group-hover:opacity-100"
               >
-                <X className="size-3.5 text-sub2 hover:text-foreground" />
+                <X className="size-3.5 text-muted-foreground hover:text-foreground" />
               </button>
             )}
           </div>
@@ -65,13 +65,13 @@ export function TitleOptions({
       </RadioGroup>
 
       <div className="mt-1 flex items-center gap-2 px-4">
-        <Plus className="size-4 text-sub2" />
+        <Plus className="size-4 text-muted-foreground" />
         <input
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && submit()}
           placeholder="Add a title option…"
-          className="w-full bg-transparent py-2 text-sm outline-none placeholder:text-sub2"
+          className="w-full bg-transparent py-2 text-sm outline-none placeholder:text-muted-foreground"
         />
       </div>
     </div>

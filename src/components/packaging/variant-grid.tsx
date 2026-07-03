@@ -58,7 +58,7 @@ export function VariantGrid({
               )}
             />
           </button>
-          <span className="font-mono text-[11px] text-sub">
+          <span className="font-mono text-[11px] text-muted-foreground">
             {TAGS[i]}
             {v.estCtr != null && ` · ${v.estCtr}% CTR`}
             {v.isSelected && " · selected"}
@@ -77,7 +77,7 @@ export function VariantGrid({
 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogTrigger asChild>
-          <button className="flex aspect-video flex-col items-center justify-center gap-1.5 rounded-thumb border border-dashed border-ghost-border bg-ghost-bg text-sub transition-colors hover:border-sub hover:text-foreground">
+          <button className="flex aspect-video flex-col items-center justify-center gap-1.5 rounded-thumb border border-dashed border-border bg-muted text-muted-foreground transition-colors hover:border-sub hover:text-foreground">
             <Plus className="size-5" />
             <span className="text-[12px]">Add option</span>
           </button>
@@ -109,7 +109,7 @@ export function VariantGrid({
               <div key={i}>
                 <Label htmlFor={`thumb-line-${i}`} className="mb-1.5 block">
                   Line {i + 1}{" "}
-                  <span className="font-normal text-sub2">(wrap a word in * to highlight)</span>
+                  <span className="font-normal text-muted-foreground">(wrap a word in * to highlight)</span>
                 </Label>
                 <Input
                   id={`thumb-line-${i}`}

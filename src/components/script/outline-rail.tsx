@@ -57,20 +57,20 @@ function OutlineRow({
         onClick={onSelect}
         className={cn(
           "group flex w-full items-center gap-2 rounded-lg px-2 py-2 text-left text-[13px]",
-          active ? "bg-hover text-foreground" : "text-sub hover:bg-hover/60",
+          active ? "bg-accent text-foreground" : "text-muted-foreground hover:bg-accent/60",
         )}
       >
         <span
           {...attributes}
           {...listeners}
-          className="cursor-grab touch-none text-sub2 opacity-0 transition-opacity group-hover:opacity-100"
+          className="cursor-grab touch-none text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100"
           aria-label="Drag to reorder"
         >
           <GripVertical className="size-3.5" />
         </span>
         <span className={cn("size-2 shrink-0 rounded-full", BEAT_META[beat.kind].dot)} />
         <span className="min-w-0 flex-1 truncate">{beat.label}</span>
-        <span className="font-mono text-[11px] text-sub2">{formatDuration(beat.sec)}</span>
+        <span className="font-mono text-[11px] text-muted-foreground">{formatDuration(beat.sec)}</span>
       </button>
     </li>
   );
@@ -111,7 +111,7 @@ export function OutlineRail({
   const stage = STAGE_META[video.stage];
 
   return (
-    <aside className="flex w-[284px] shrink-0 flex-col gap-5 overflow-y-auto border-r border-line-soft p-5">
+    <aside className="flex w-[284px] shrink-0 flex-col gap-5 overflow-y-auto border-r border-border p-5">
       <Link href={`/video/${video.id}`} className="flex flex-col gap-3">
         <ThumbnailPackaging
           color={video.packagingColor}
@@ -121,7 +121,7 @@ export function OutlineRail({
         />
         <div>
           <p className="line-clamp-2 text-sm font-medium">{video.title}</p>
-          <p className="mt-1 flex items-center gap-1.5 text-[12px] text-sub">
+          <p className="mt-1 flex items-center gap-1.5 text-[12px] text-muted-foreground">
             <span className={cn("size-2 rounded-full", stage.dot)} />
             {stage.label} · Not scheduled
           </p>
@@ -151,7 +151,7 @@ export function OutlineRail({
         </DndContext>
 
         <DropdownMenu>
-          <DropdownMenuTrigger className="mt-2 flex w-full items-center gap-2 rounded-lg px-2 py-2 text-[13px] text-sub hover:bg-hover">
+          <DropdownMenuTrigger className="mt-2 flex w-full items-center gap-2 rounded-lg px-2 py-2 text-[13px] text-muted-foreground hover:bg-accent">
             <Plus className="size-4" /> Add beat
           </DropdownMenuTrigger>
           <DropdownMenuContent align="start">

@@ -15,19 +15,19 @@ const BENEFITS = [
 export default function ConnectPage() {
   return (
     <div className="flex min-h-full items-center justify-center p-6">
-      <div className="w-full max-w-[460px] rounded-2xl border border-border bg-surface p-8 text-center">
-        <span className="mx-auto flex size-14 items-center justify-center rounded-2xl bg-yt-red shadow-[0_8px_30px_rgba(255,0,0,.35)]">
+      <div className="w-full max-w-[460px] rounded-2xl border border-border bg-card p-8 text-center">
+        <span className="mx-auto flex size-14 items-center justify-center rounded-2xl bg-primary shadow-[0_8px_30px_rgba(255,0,0,.35)]">
           <Play className="size-6 fill-white text-white" />
         </span>
         <h1 className="mt-5 text-[26px] font-bold leading-tight">
           Connect your YouTube channel
         </h1>
-        <p className="mt-2 text-sm leading-relaxed text-sub">
+        <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
           Pull in your published videos so every title and thumbnail decision is
           made in context — next to the real thing, with real numbers.
         </p>
 
-        <ul className="mt-6 flex flex-col gap-2.5 rounded-xl border border-border bg-soft p-4 text-left">
+        <ul className="mt-6 flex flex-col gap-2.5 rounded-xl border border-border bg-muted p-4 text-left">
           {BENEFITS.map((benefit) => (
             <li key={benefit} className="flex items-center gap-3 text-sm">
               <span className="flex size-5 items-center justify-center rounded-full bg-saved-dot/15">
@@ -48,7 +48,7 @@ export default function ConnectPage() {
         </Button>
         <Link
           href="/"
-          className="mt-3 inline-block text-sm text-sub hover:text-foreground"
+          className="mt-3 inline-block text-sm text-muted-foreground hover:text-foreground"
         >
           Maybe later
         </Link>

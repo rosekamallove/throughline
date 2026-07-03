@@ -2,69 +2,91 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
+@custom-variant dark (&:is(.dark *));
+
 /* ---------------------------------------------------------------------------
-   Throughline theming — YouTube Dark (default) + YouTube Light.
+   Throughline theming — shadcn "radix-maia" preset (b4gy472rQ), light + dark
+   via the `.dark` class (next-themes). Components use semantic tokens only.
 
-   Three layers:
-     1. Raw palette vars keyed by [data-theme] (from the design handoff tokens)
-     2. shadcn semantic tokens mapped onto the raw palette
-     3. `@theme inline` registering everything as Tailwind utilities
-
-   Rules: components use semantic/custom tokens only — never `dark:` variants,
-   never raw hex. Theme switching = next-themes flipping `data-theme` on <html>.
-   A future "minimal" theme is a new [data-theme] block + AppShell shell branch.
+   Custom tokens below the preset blocks are product content, not chrome:
+   pipeline stage colors, beat-kind colors, and the thumbnail highlight —
+   these stay constant across themes (packaging must read the same anywhere).
    --------------------------------------------------------------------------- */
 
-/* 1. Raw palettes ---------------------------------------------------------- */
-:root,
-[data-theme="yt-dark"] {
-  color-scheme: dark;
-  --bg: #0f0f0f;
-  --surface: #212121;
-  --soft: #181818;
-  --hover: #272727;
-  --text: #f1f1f1;
-  --sub: #aaaaaa;
-  --sub2: #717171;
-  --body-text: #d4d4d4;
-  --line: rgba(255, 255, 255, 0.14);
-  --line-soft: #272727;
-  --yt-red: #ff0000;
-  --thumb-r: 12px;
-  --thumb-accent: #ffd64a;
-  --chip: #272727;
-  --chip-text: #f1f1f1;
-  --chip-active-bg: #f1f1f1;
-  --chip-active-text: #0f0f0f;
-  --search-bg: #121212;
-  --search-border: #303030;
-  --ghost-bg: #181818;
-  --ghost-border: #3a3a3a;
+:root {
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.145 0 0);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.145 0 0);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.145 0 0);
+  --primary: oklch(0.505 0.213 27.518);
+  --primary-foreground: oklch(0.971 0.013 17.38);
+  --secondary: oklch(0.967 0.001 286.375);
+  --secondary-foreground: oklch(0.21 0.006 285.885);
+  --muted: oklch(0.97 0 0);
+  --muted-foreground: oklch(0.556 0 0);
+  --accent: oklch(0.97 0 0);
+  --accent-foreground: oklch(0.205 0 0);
+  --destructive: oklch(0.577 0.245 27.325);
+  --border: oklch(0.922 0 0);
+  --input: oklch(0.922 0 0);
+  --ring: oklch(0.708 0 0);
+  --chart-1: oklch(0.808 0.114 19.571);
+  --chart-2: oklch(0.637 0.237 25.331);
+  --chart-3: oklch(0.577 0.245 27.325);
+  --chart-4: oklch(0.505 0.213 27.518);
+  --chart-5: oklch(0.444 0.177 26.899);
+  --radius: 0.875rem;
+  --sidebar: oklch(0.985 0 0);
+  --sidebar-foreground: oklch(0.145 0 0);
+  --sidebar-primary: oklch(0.577 0.245 27.325);
+  --sidebar-primary-foreground: oklch(0.971 0.013 17.38);
+  --sidebar-accent: oklch(0.97 0 0);
+  --sidebar-accent-foreground: oklch(0.205 0 0);
+  --sidebar-border: oklch(0.922 0 0);
+  --sidebar-ring: oklch(0.708 0 0);
+  --highlight: oklch(0.852 0.199 91.936);
+  --brand: oklch(0.623 0.214 259.815);
 }
 
-[data-theme="yt-light"] {
-  color-scheme: light;
-  --bg: #ffffff;
-  --surface: #f9f9f9;
-  --soft: #f8f8f8;
-  --hover: #f2f2f2;
-  --text: #0f0f0f;
-  --sub: #606060;
-  --sub2: #909090;
-  --body-text: #3a3a3a;
-  --line: #e5e5e5;
-  --line-soft: #e5e5e5;
-  --chip: #f2f2f2;
-  --chip-text: #0f0f0f;
-  --chip-active-bg: #0f0f0f;
-  --chip-active-text: #ffffff;
-  --search-bg: #ffffff;
-  --search-border: #cccccc;
-  --ghost-bg: #f8f8f8;
-  --ghost-border: #cccccc;
+.dark {
+  --background: oklch(0.145 0 0);
+  --foreground: oklch(0.985 0 0);
+  --card: oklch(0.205 0 0);
+  --card-foreground: oklch(0.985 0 0);
+  --popover: oklch(0.205 0 0);
+  --popover-foreground: oklch(0.985 0 0);
+  --primary: oklch(0.444 0.177 26.899);
+  --primary-foreground: oklch(0.971 0.013 17.38);
+  --secondary: oklch(0.274 0.006 286.033);
+  --secondary-foreground: oklch(0.985 0 0);
+  --muted: oklch(0.269 0 0);
+  --muted-foreground: oklch(0.708 0 0);
+  --accent: oklch(0.269 0 0);
+  --accent-foreground: oklch(0.985 0 0);
+  --destructive: oklch(0.704 0.191 22.216);
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 15%);
+  --ring: oklch(0.556 0 0);
+  --chart-1: oklch(0.808 0.114 19.571);
+  --chart-2: oklch(0.637 0.237 25.331);
+  --chart-3: oklch(0.577 0.245 27.325);
+  --chart-4: oklch(0.505 0.213 27.518);
+  --chart-5: oklch(0.444 0.177 26.899);
+  --sidebar: oklch(0.205 0 0);
+  --sidebar-foreground: oklch(0.985 0 0);
+  --sidebar-primary: oklch(0.637 0.237 25.331);
+  --sidebar-primary-foreground: oklch(0.971 0.013 17.38);
+  --sidebar-accent: oklch(0.269 0 0);
+  --sidebar-accent-foreground: oklch(0.985 0 0);
+  --sidebar-border: oklch(1 0 0 / 10%);
+  --sidebar-ring: oklch(0.556 0 0);
+  --highlight: oklch(0.852 0.199 91.936);
+  --brand: oklch(0.707 0.165 254.624);
 }
 
-/* Theme-independent: pipeline stage + beat-kind colors (from handoff) */
+/* Product content colors — theme-independent (from the design handoff) */
 :root {
   --stage-idea: #9aa4b2;
   --stage-scripting: #e5674b;
@@ -77,45 +99,10 @@
   --beat-body: #2c9c86;
   --beat-conclusion: #7c6bd6;
   --saved-dot: #2dd4a7;
+  --thumb-accent: #ffd64a;
+  --radius-thumbnail: 0.75rem;
 }
 
-/* 2. shadcn semantic tokens ride the raw palette --------------------------- */
-:root {
-  --background: var(--bg);
-  --foreground: var(--text);
-  --card: var(--surface);
-  --card-foreground: var(--text);
-  --popover: var(--surface);
-  --popover-foreground: var(--text);
-  --primary: var(--yt-red);
-  --primary-foreground: #ffffff;
-  --secondary: var(--hover);
-  --secondary-foreground: var(--text);
-  --muted: var(--soft);
-  --muted-foreground: var(--sub);
-  --accent: var(--hover);
-  --accent-foreground: var(--text);
-  --destructive: #e5484d;
-  --border: var(--line);
-  --input: var(--line);
-  --ring: var(--sub2);
-  --radius: 0.75rem;
-  --chart-1: var(--stage-scripting);
-  --chart-2: var(--stage-recording);
-  --chart-3: var(--stage-editing);
-  --chart-4: var(--stage-packaging);
-  --chart-5: var(--stage-published);
-  --sidebar: var(--bg);
-  --sidebar-foreground: var(--text);
-  --sidebar-primary: var(--yt-red);
-  --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: var(--hover);
-  --sidebar-accent-foreground: var(--text);
-  --sidebar-border: var(--line);
-  --sidebar-ring: var(--sub2);
-}
-
-/* 3. Tailwind utility registration — MUST stay `inline` -------------------- */
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -149,26 +136,7 @@
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
 
-  /* Throughline custom tokens */
-  --color-surface: var(--surface);
-  --color-soft: var(--soft);
-  --color-hover: var(--hover);
-  --color-sub: var(--sub);
-  --color-sub2: var(--sub2);
-  --color-body-text: var(--body-text);
-  --color-line-soft: var(--line-soft);
-  --color-yt-red: var(--yt-red);
-  --color-thumb-accent: var(--thumb-accent);
-  --color-chip: var(--chip);
-  --color-chip-text: var(--chip-text);
-  --color-chip-active-bg: var(--chip-active-bg);
-  --color-chip-active-text: var(--chip-active-text);
-  --color-search-bg: var(--search-bg);
-  --color-search-border: var(--search-border);
-  --color-ghost-bg: var(--ghost-bg);
-  --color-ghost-border: var(--ghost-border);
-  --color-saved-dot: var(--saved-dot);
-
+  /* Throughline product tokens */
   --color-stage-idea: var(--stage-idea);
   --color-stage-scripting: var(--stage-scripting);
   --color-stage-recording: var(--stage-recording);
@@ -179,10 +147,13 @@
   --color-beat-rehook: var(--beat-rehook);
   --color-beat-body: var(--beat-body);
   --color-beat-conclusion: var(--beat-conclusion);
+  --color-saved-dot: var(--saved-dot);
+  --color-thumb-accent: var(--thumb-accent);
 
-  --font-sans: var(--font-roboto);
-  --font-mono: var(--font-jbmono);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
   --font-anton: var(--font-anton);
+  --font-heading: var(--font-geist-sans);
 
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
@@ -191,7 +162,9 @@
   --radius-2xl: calc(var(--radius) * 1.8);
   --radius-3xl: calc(var(--radius) * 2.2);
   --radius-4xl: calc(var(--radius) * 2.6);
-  --radius-thumb: var(--thumb-r);
+  --radius-thumb: var(--radius-thumbnail);
+  --color-brand: var(--brand);
+  --color-highlight: var(--highlight);
 }
 
 @layer base {
@@ -207,8 +180,8 @@
 }
 
 @layer utilities {
-  /* JetBrains Mono uppercase micro-label (10px / 1.5px tracking, per handoff) */
+  /* Mono uppercase micro-label used for section eyebrows and stats */
   .mono-label {
-    @apply font-mono text-[10px] font-semibold uppercase tracking-[1.5px] text-sub2;
+    @apply font-mono text-[10px] font-semibold uppercase tracking-[1.5px] text-muted-foreground;
   }
 }

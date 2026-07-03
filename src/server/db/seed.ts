@@ -311,7 +311,12 @@ async function main() {
     );
   }
 
-  await db.insert(beats).values(SEED_BEATS);
+  await db.insert(beats).values(
+    SEED_BEATS.map((b) => ({
+      ...b,
+      content: [{ type: "p", children: [{ text: b.text ?? "" }] }],
+    })),
+  );
   await db.insert(packagingVariants).values(SEED_VARIANTS);
 
   const count = await db.$count(videos);

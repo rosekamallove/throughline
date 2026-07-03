@@ -22,8 +22,8 @@ export function Checklist({
         <li key={item.id}>
           <label
             className={cn(
-              "flex cursor-pointer items-center gap-3 rounded-lg px-2 py-1.5 text-sm hover:bg-hover",
-              item.done && "text-sub2 line-through",
+              "flex cursor-pointer items-center gap-3 rounded-lg px-2 py-1.5 text-sm hover:bg-accent",
+              item.done && "text-muted-foreground line-through",
             )}
           >
             <Checkbox

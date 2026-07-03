@@ -76,14 +76,25 @@ export const beatRouter = createTRPCRouter({
     }),
 
   /** Debounced autosave target — returns only updatedAt so success never
-   *  triggers a list refetch that would clobber the caret. */
+   *  triggers a list refetch that would clobber the caret. `text` is the
+   *  plain-text mirror of the Plate `content` document. */
   updateText: protectedProcedure
-    .input(z.object({ id: z.uuid(), text: z.string().max(20_000) }))
+    .input(
+      z.object({
+        id: z.uuid(),
+        text: z.string().max(20_000),
+        content: z.array(z.record(z.string(), z.unknown())).max(500).optional(),
+      }),
+    )
     .mutation(async ({ ctx, input }) => {
       await assertBeatOwned(ctx, input.id);
       const [updated] = await ctx.db
         .update(beats)
-        .set({ text: input.text, updatedAt: new Date() })
+        .set({
+          text: input.text,
+          ...(input.content ? { content: input.content } : {}),
+          updatedAt: new Date(),
+        })
         .where(eq(beats.id, input.id))
         .returning({ id: beats.id, updatedAt: beats.updatedAt });
       return updated;

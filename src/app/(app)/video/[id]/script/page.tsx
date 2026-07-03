@@ -3,6 +3,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, Share2 } from "lucide-react";
 import Link from "next/link";
+import type { Value } from "platejs";
 import { use, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
@@ -32,27 +33,30 @@ export default function ScriptEditorPage({ params }: { params: Promise<{ id: str
   // null falls back to the first beat once data loads.
   const [selectedId, setActiveId] = useState<string | null>(null);
   const activeId = selectedId ?? beats?.[0]?.id ?? null;
-  // Local drafts are the source of truth while typing; the server catches up.
+  // Local drafts (plain-text mirror) drive stats while typing; the Plate
+  // editors own the rich content, the server catches up on a debounce.
   const [drafts, setDrafts] = useState<Record<string, string>>({});
+  const contentDrafts = useRef<Record<string, Value>>({});
   const [pendingSaves, setPendingSaves] = useState(0);
   const timers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
 
   const updateText = useMutation(trpc.beat.updateText.mutationOptions());
 
-  function scheduleTextSave(beatId: string, text: string) {
+  function scheduleContentSave(beatId: string, text: string, content: Value) {
     setDrafts((d) => ({ ...d, [beatId]: text }));
+    contentDrafts.current[beatId] = content;
     clearTimeout(timers.current[beatId]);
     timers.current[beatId] = setTimeout(() => {
       delete timers.current[beatId];
       setPendingSaves((n) => n + 1);
       updateText.mutate(
-        { id: beatId, text },
+        { id: beatId, text, content },
         {
           onSuccess: () => {
             // Patch the cache silently — never invalidate here, a refetch
             // mid-typing would clobber the caret (plan pitfall #5).
             queryClient.setQueryData(beatsKey, (old) =>
-              old?.map((b) => (b.id === beatId ? { ...b, text } : b)),
+              old?.map((b) => (b.id === beatId ? { ...b, text, content } : b)),
             );
           },
           onError: (e) => toast.error(`Autosave failed: ${e.message}`),
@@ -73,11 +77,14 @@ export default function ScriptEditorPage({ params }: { params: Promise<{ id: str
   }, [updateText.mutate]);
   useEffect(() => {
     const pending = timers.current;
+    const pendingContent = contentDrafts.current;
     return () => {
       for (const [beatId, timer] of Object.entries(pending)) {
         clearTimeout(timer);
         const text = draftsRef.current[beatId];
-        if (text != null) mutateTextRef.current({ id: beatId, text });
+        if (text != null) {
+          mutateTextRef.current({ id: beatId, text, content: pendingContent[beatId] });
+        }
       }
     };
   }, []);
@@ -171,7 +178,7 @@ export default function ScriptEditorPage({ params }: { params: Promise<{ id: str
   if (!video || !beats) {
     return (
       <div className="flex h-full">
-        <div className="w-[284px] border-r border-line-soft p-5">
+        <div className="w-[284px] border-r border-border p-5">
           <Skeleton className="aspect-video rounded-thumb" />
           <Skeleton className="mt-4 h-4 w-3/4" />
         </div>
@@ -186,15 +193,15 @@ export default function ScriptEditorPage({ params }: { params: Promise<{ id: str
 
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <header className="flex h-12 shrink-0 items-center gap-4 border-b border-line-soft px-5">
+      <header className="flex h-12 shrink-0 items-center gap-4 border-b border-border px-5">
         <Link
           href={`/video/${videoId}`}
-          className="flex items-center gap-2 text-sm text-sub hover:text-foreground"
+          className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
         >
           <ArrowLeft className="size-4" /> Back
         </Link>
         <span className="text-sm font-medium">Script</span>
-        <span className="flex items-center gap-1.5 text-[12px] text-sub">
+        <span className="flex items-center gap-1.5 text-[12px] text-muted-foreground">
           <span
             className={cn(
               "size-2 rounded-full",
@@ -231,7 +238,7 @@ export default function ScriptEditorPage({ params }: { params: Promise<{ id: str
           <div className="mx-auto max-w-[700px] px-8 pb-24 pt-10">
             <p className="mono-label mb-2">Script</p>
             <h1 className="text-3xl font-bold leading-tight">{video.title}</h1>
-            <p className="mt-2 font-mono text-[12px] text-sub">
+            <p className="mt-2 font-mono text-[12px] text-muted-foreground">
               {timed.length} beats · {totalWords} words · {formatDuration(totalSec)}
             </p>
 
@@ -242,7 +249,9 @@ export default function ScriptEditorPage({ params }: { params: Promise<{ id: str
                   beat={beat}
                   active={beat.id === activeId}
                   onActivate={() => setActiveId(beat.id)}
-                  onChangeText={(text) => scheduleTextSave(beat.id, text)}
+                  onChangeContent={({ value, text }) =>
+                    scheduleContentSave(beat.id, text, value)
+                  }
                   onChangeLabel={(label) => updateBeat.mutate({ id: beat.id, label })}
                   onChangeKind={(kind) => updateBeat.mutate({ id: beat.id, kind })}
                   onDelete={() => deleteBeat.mutate({ id: beat.id })}

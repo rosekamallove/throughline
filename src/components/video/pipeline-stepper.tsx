@@ -25,7 +25,7 @@ export function PipelineStepper({
               <div
                 className={cn(
                   "h-0.5 flex-1",
-                  i === 0 ? "bg-transparent" : i <= current ? "bg-primary" : "bg-line-soft",
+                  i === 0 ? "bg-transparent" : i <= current ? "bg-primary" : "bg-border",
                 )}
               />
               <button
@@ -35,7 +35,7 @@ export function PipelineStepper({
                   "flex size-5 shrink-0 items-center justify-center rounded-full border-2 transition-colors",
                   done || active
                     ? "border-primary bg-primary text-white"
-                    : "border-border bg-surface hover:border-sub",
+                    : "border-border bg-card hover:border-sub",
                 )}
               >
                 {done && <Check className="size-3" />}
@@ -48,14 +48,14 @@ export function PipelineStepper({
                     ? "bg-transparent"
                     : i < current
                       ? "bg-primary"
-                      : "bg-line-soft",
+                      : "bg-border",
                 )}
               />
             </div>
             <span
               className={cn(
                 "font-mono text-[10px] uppercase tracking-[1.5px]",
-                done || active ? "text-foreground" : "text-sub2",
+                done || active ? "text-foreground" : "text-muted-foreground",
               )}
             >
               {STAGE_META[s].label}

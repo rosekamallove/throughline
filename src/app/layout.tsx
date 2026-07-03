@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Anton, JetBrains_Mono, Roboto } from "next/font/google";
+import { Anton, Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 
 import { ThemeProvider } from "@/components/shell/theme-provider";
@@ -7,23 +7,23 @@ import { Toaster } from "@/components/ui/sonner";
 import { cn } from "@/lib/utils";
 import { TRPCReactProvider } from "@/trpc/client";
 
-const roboto = Roboto({
+const geistSans = Geist({
   subsets: ["latin"],
-  weight: ["400", "500", "700", "900"],
-  variable: "--font-roboto",
+  variable: "--font-geist-sans",
   display: "swap",
 });
 
+const geistMono = Geist_Mono({
+  subsets: ["latin"],
+  variable: "--font-geist-mono",
+  display: "swap",
+});
+
+// Thumbnail packaging text only — not app chrome.
 const anton = Anton({
   subsets: ["latin"],
   weight: "400",
   variable: "--font-anton",
-  display: "swap",
-});
-
-const jetbrainsMono = JetBrains_Mono({
-  subsets: ["latin"],
-  variable: "--font-jbmono",
   display: "swap",
 });
 
@@ -43,9 +43,9 @@ export default function RootLayout({
       suppressHydrationWarning
       className={cn(
         "h-full antialiased",
-        roboto.variable,
+        geistSans.variable,
+        geistMono.variable,
         anton.variable,
-        jetbrainsMono.variable,
       )}
     >
       <body className="flex min-h-full flex-col font-sans">

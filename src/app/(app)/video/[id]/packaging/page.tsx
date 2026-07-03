@@ -63,7 +63,7 @@ export default function PackagingPage({ params }: { params: Promise<{ id: string
       <div className="mb-6 flex items-center gap-4">
         <Link
           href={`/video/${id}`}
-          className="flex items-center gap-2 text-sm text-sub hover:text-foreground"
+          className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
         >
           <ArrowLeft className="size-4" /> Back
         </Link>
@@ -98,16 +98,16 @@ export default function PackagingPage({ params }: { params: Promise<{ id: string
         <div className="flex flex-col gap-6">
           <section>
             <p className="mono-label mb-3">Preview — in feed</p>
-            <div className="rounded-2xl border border-border bg-soft p-4">
+            <div className="rounded-2xl border border-border bg-muted p-4">
               <VideoCard video={{ ...video, views: video.views ?? 12_400 }} viewerMode />
             </div>
           </section>
 
-          <section className="rounded-2xl border border-border bg-surface p-5">
+          <section className="rounded-2xl border border-border bg-card p-5">
             <p className="flex items-center gap-2 text-sm font-semibold">
-              <BarChart3 className="size-4 text-sub" /> Test your packaging
+              <BarChart3 className="size-4 text-muted-foreground" /> Test your packaging
             </p>
-            <p className="mt-1.5 text-[13px] leading-relaxed text-sub">
+            <p className="mt-1.5 text-[13px] leading-relaxed text-muted-foreground">
               Get quick gut-check votes on your title + thumbnail combos before you publish.
             </p>
             <Button

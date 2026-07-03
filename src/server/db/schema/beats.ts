@@ -18,6 +18,9 @@ export const beats = pgTable(
     // Plain index — no unique constraint, so reorder can rewrite positions in one transaction.
     position: integer("position").notNull(),
     text: text("text").notNull().default(""),
+    /** Plate editor document (rich text); `text` stays the plain-text mirror
+     *  used for word counts. Null falls back to textToValue(text). */
+    content: jsonb("content").$type<unknown>(),
     /** Coach guidance override; null falls back to the per-kind default in lib/beats.ts. */
     guide: text("guide"),
     broll: jsonb("broll").$type<BrollItem[]>().notNull().default([]),

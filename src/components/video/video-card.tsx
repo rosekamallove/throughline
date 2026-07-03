@@ -1,9 +1,9 @@
 "use client";
 
-import { MoreVertical } from "lucide-react";
 import Link from "next/link";
 
 import { ThumbnailPackaging } from "@/components/video/thumbnail-packaging";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { formatCompact, timeAgo } from "@/lib/format";
 import { formatDuration } from "@/lib/runtime";
 import { STAGE_META } from "@/lib/stages";
@@ -15,10 +15,9 @@ function metaLine(video: Video): string {
     return `${formatCompact(video.views)} views · ${timeAgo(video.publishedAt ?? video.createdAt)}`;
   }
   if (video.stage === "idea") {
-    return `Idea · ${timeAgo(video.createdAt)}`;
+    return timeAgo(video.createdAt);
   }
-  const next = video.nextAction ? ` · next: ${video.nextAction}` : "";
-  return `${STAGE_META[video.stage].label}${next}`;
+  return video.nextAction ? `next: ${video.nextAction}` : timeAgo(video.createdAt);
 }
 
 export function VideoCard({
@@ -28,14 +27,13 @@ export function VideoCard({
   channelName = "Rose Kamal",
 }: {
   video: Video;
-  /** Render exactly as a viewer would see it in-feed (FeedPreview). */
+  /** Render as a viewer would see it in a feed (packaging preview). */
   viewerMode?: boolean;
   userInitial?: string;
   channelName?: string;
 }) {
   const stage = STAGE_META[video.stage];
-  const inProduction = !viewerMode && video.stage !== "published" && video.stage !== "idea";
-  const published = video.stage === "published";
+  const inProduction = video.stage !== "published" && video.stage !== "idea";
 
   const card = (
     <article className="group">
@@ -47,47 +45,45 @@ export function VideoCard({
           alt={video.title}
         />
         {!viewerMode && inProduction && (
-          <>
-            <span
-              className={cn(
-                "absolute left-2 top-2 rounded-md px-2 py-0.5 font-mono text-[10px] font-semibold uppercase tracking-[1.5px] backdrop-blur",
-                stage.badge,
-              )}
-            >
-              {stage.label}
-            </span>
-            <div className="absolute inset-x-0 bottom-0 h-[3px] overflow-hidden rounded-b-thumb bg-black/40">
-              <div
-                className={cn("h-full", stage.dot)}
-                style={{ width: `${video.progress}%` }}
-              />
-            </div>
-          </>
+          <div className="absolute inset-x-0 bottom-0 h-[3px] overflow-hidden rounded-b-thumb bg-black/30">
+            <div className={cn("h-full", stage.dot)} style={{ width: `${video.progress}%` }} />
+          </div>
         )}
-        {(published || viewerMode) && video.durationSec != null && (
-          <span className="absolute bottom-2 right-2 rounded bg-black/80 px-1.5 py-0.5 font-mono text-[11px] font-medium text-white">
+        {(video.stage === "published" || viewerMode) && video.durationSec != null && (
+          <span className="absolute bottom-2 right-2 rounded-md bg-black/80 px-1.5 py-0.5 font-mono text-[11px] font-medium text-white">
             {formatDuration(video.durationSec)}
           </span>
         )}
       </div>
 
-      <div className="mt-3 flex gap-3">
-        <span className="mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-full bg-[linear-gradient(140deg,#FF0000,#F5A623)] text-sm font-bold text-white">
-          {userInitial}
-        </span>
-        <div className="min-w-0 flex-1">
-          <h3 className="line-clamp-2 text-sm font-medium leading-5">{video.title}</h3>
-          <p className="mt-1 text-[13px] leading-tight text-sub">{channelName}</p>
-          <p className="text-[13px] leading-tight text-sub">
-            {viewerMode
-              ? `${video.views != null ? `${formatCompact(video.views)} views · ` : ""}${timeAgo(video.publishedAt ?? video.createdAt)}`
-              : metaLine(video)}
-          </p>
+      {viewerMode ? (
+        <div className="mt-3 flex gap-3">
+          <Avatar className="mt-0.5 size-9">
+            <AvatarFallback className="bg-primary text-sm font-semibold text-primary-foreground">
+              {userInitial}
+            </AvatarFallback>
+          </Avatar>
+          <div className="min-w-0">
+            <h3 className="line-clamp-2 text-sm font-medium leading-5">{video.title}</h3>
+            <p className="mt-1 text-[13px] text-muted-foreground">{channelName}</p>
+            <p className="text-[13px] text-muted-foreground">
+              {video.views != null ? `${formatCompact(video.views)} views · ` : ""}
+              {timeAgo(video.publishedAt ?? video.createdAt)}
+            </p>
+          </div>
         </div>
-        {!viewerMode && (
-          <MoreVertical className="mt-1 size-4 shrink-0 text-sub opacity-0 transition-opacity group-hover:opacity-100" />
-        )}
-      </div>
+      ) : (
+        <div className="mt-3 min-w-0">
+          <p className="mono-label flex items-center gap-1.5">
+            <span className={cn("size-2 rounded-full", stage.dot)} />
+            {stage.label}
+          </p>
+          <h3 className="mt-1 line-clamp-2 text-sm font-medium leading-5 group-hover:underline">
+            {video.title}
+          </h3>
+          <p className="mt-0.5 truncate text-[13px] text-muted-foreground">{metaLine(video)}</p>
+        </div>
+      )}
     </article>
   );
 

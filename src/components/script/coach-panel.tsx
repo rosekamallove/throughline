@@ -34,12 +34,12 @@ export function CoachPanel({
   }
 
   return (
-    <aside className="flex w-[318px] shrink-0 flex-col gap-6 overflow-y-auto border-l border-line-soft p-5">
+    <aside className="flex w-[318px] shrink-0 flex-col gap-6 overflow-y-auto border-l border-border p-5">
       <section>
         <p className="mono-label mb-3">Pacing</p>
         <PacingBar beats={beats} activeId={activeBeat?.id ?? null} onSelect={onSelectBeat} />
         {activeBeat && (
-          <p className="mt-2 text-[13px] text-sub">
+          <p className="mt-2 text-[13px] text-muted-foreground">
             <span className={cn("font-medium", meta?.text)}>{activeBeat.label}</span>{" "}
             <span className="font-mono">
               · {Math.round((activeBeat.sec / total) * 100)}% of runtime
@@ -49,12 +49,12 @@ export function CoachPanel({
       </section>
 
       {activeBeat && meta && (
-        <section className="rounded-xl border border-border bg-surface p-4">
+        <section className="rounded-xl border border-border bg-card p-4">
           <p className={cn("mono-label mb-2", meta.text)}>Coach · {meta.label}</p>
           <p className="text-sm font-semibold">
             What a great {meta.label.toLowerCase()} does
           </p>
-          <p className="mt-1.5 text-sm leading-relaxed text-body-text">
+          <p className="mt-1.5 text-sm leading-relaxed text-foreground/90">
             {activeBeat.guide ?? meta.guide}
           </p>
         </section>
@@ -65,7 +65,7 @@ export function CoachPanel({
           <p className="mono-label mb-2">B-roll &amp; shots</p>
           <ul className="flex flex-col gap-1">
             {activeBeat.broll.map((shot) => (
-              <li key={shot.id} className="group flex items-center gap-3 rounded-lg px-2 py-1.5 hover:bg-hover">
+              <li key={shot.id} className="group flex items-center gap-3 rounded-lg px-2 py-1.5 hover:bg-accent">
                 <Checkbox
                   checked={shot.done}
                   onCheckedChange={(checked) =>
@@ -80,7 +80,7 @@ export function CoachPanel({
                 <span
                   className={cn(
                     "flex-1 text-[13px]",
-                    shot.done && "text-sub2 line-through",
+                    shot.done && "text-muted-foreground line-through",
                   )}
                 >
                   {shot.text}
@@ -95,19 +95,19 @@ export function CoachPanel({
                     )
                   }
                 >
-                  <X className="size-3.5 text-sub2 hover:text-foreground" />
+                  <X className="size-3.5 text-muted-foreground hover:text-foreground" />
                 </button>
               </li>
             ))}
           </ul>
           <div className="mt-2 flex items-center gap-2 px-2">
-            <Plus className="size-3.5 text-sub2" />
+            <Plus className="size-3.5 text-muted-foreground" />
             <input
               value={newShot}
               onChange={(e) => setNewShot(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && addShot()}
               placeholder="Add a shot…"
-              className="w-full bg-transparent py-1 text-[13px] outline-none placeholder:text-sub2"
+              className="w-full bg-transparent py-1 text-[13px] outline-none placeholder:text-muted-foreground"
             />
           </div>
         </section>

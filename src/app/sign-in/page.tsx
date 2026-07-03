@@ -32,9 +32,9 @@ export default function SignInPage() {
 
   return (
     <main className="flex min-h-dvh items-center justify-center p-6">
-      <div className="w-full max-w-sm rounded-2xl border border-border bg-surface p-8">
+      <div className="w-full max-w-sm rounded-2xl border border-border bg-card p-8">
         <div className="mb-6 flex items-center gap-2">
-          <span className="flex size-9 items-center justify-center rounded-xl bg-yt-red">
+          <span className="flex size-9 items-center justify-center rounded-xl bg-primary">
             <Play className="size-4 fill-white text-white" />
           </span>
           <span className="text-xl font-bold tracking-tight">Throughline</span>

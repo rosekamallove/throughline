@@ -1,8 +1,10 @@
 "use client";
 
 import { MoreHorizontal, Trash2 } from "lucide-react";
+import type { Value } from "platejs";
 import { useState } from "react";
 
+import { BeatEditor } from "@/components/script/beat-editor";
 import type { TimedBeat } from "@/components/script/pacing-bar";
 import {
   DropdownMenu,
@@ -13,6 +15,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { BEAT_KINDS, BEAT_META } from "@/lib/beats";
 import type { BeatKind } from "@/lib/beats";
+import { textToValue } from "@/lib/plate";
 import { formatDuration } from "@/lib/runtime";
 import { cn } from "@/lib/utils";
 
@@ -20,7 +23,7 @@ export function BeatBlock({
   beat,
   active,
   onActivate,
-  onChangeText,
+  onChangeContent,
   onChangeLabel,
   onChangeKind,
   onDelete,
@@ -28,13 +31,17 @@ export function BeatBlock({
   beat: TimedBeat;
   active: boolean;
   onActivate: () => void;
-  onChangeText: (text: string) => void;
+  onChangeContent: (payload: { value: Value; text: string }) => void;
   onChangeLabel: (label: string) => void;
   onChangeKind: (kind: BeatKind) => void;
   onDelete: () => void;
 }) {
   const meta = BEAT_META[beat.kind];
   const [label, setLabel] = useState(beat.label);
+  // Initial value only — the Plate editor owns its state after mount.
+  const [initialValue] = useState<Value>(
+    () => (beat.content as Value | null) ?? textToValue(beat.text),
+  );
 
   return (
     <section
@@ -42,7 +49,7 @@ export function BeatBlock({
       onClick={onActivate}
       className={cn(
         "group rounded-r-xl border-l-[3px] py-3 pl-5 pr-3 transition-colors",
-        active ? cn("bg-soft", meta.bar) : "border-transparent",
+        active ? cn("bg-muted", meta.bar) : "border-transparent",
       )}
     >
       <div className="mb-1.5 flex items-center gap-2.5">
@@ -62,15 +69,15 @@ export function BeatBlock({
             else setLabel(beat.label);
           }}
           onKeyDown={(e) => e.key === "Enter" && e.currentTarget.blur()}
-          className="min-w-0 flex-1 bg-transparent text-[13px] font-medium text-sub outline-none focus:text-foreground"
+          className="min-w-0 flex-1 bg-transparent text-[13px] font-medium text-muted-foreground outline-none focus:text-foreground"
         />
-        <span className="whitespace-nowrap font-mono text-[11px] text-sub2">
+        <span className="whitespace-nowrap font-mono text-[11px] text-muted-foreground">
           {beat.words}w · {formatDuration(beat.sec)}
         </span>
         <DropdownMenu>
           <DropdownMenuTrigger
             aria-label="Beat options"
-            className="rounded p-1 text-sub2 opacity-0 transition-opacity hover:bg-hover hover:text-foreground group-hover:opacity-100 data-[state=open]:opacity-100"
+            className="rounded p-1 text-muted-foreground opacity-0 transition-opacity hover:bg-accent hover:text-foreground group-hover:opacity-100 data-[state=open]:opacity-100"
           >
             <MoreHorizontal className="size-4" />
           </DropdownMenuTrigger>
@@ -89,12 +96,10 @@ export function BeatBlock({
         </DropdownMenu>
       </div>
 
-      <textarea
-        value={beat.text}
-        onChange={(e) => onChangeText(e.target.value)}
+      <BeatEditor
+        initialValue={initialValue}
         placeholder="Write this beat…"
-        className="w-full resize-none bg-transparent text-[15.5px] leading-[1.75] text-body-text outline-none [field-sizing:content] placeholder:text-sub2"
-        rows={1}
+        onChange={onChangeContent}
       />
     </section>
   );

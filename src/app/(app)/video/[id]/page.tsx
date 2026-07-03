@@ -138,14 +138,14 @@ export default function VideoDetailPage({ params }: { params: Promise<{ id: stri
       <div className="mb-6 flex items-center justify-between">
         <Link
           href="/"
-          className="flex items-center gap-2 text-sm text-sub hover:text-foreground"
+          className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
         >
           <ArrowLeft className="size-4" /> Back to channel
         </Link>
         <DropdownMenu>
           <DropdownMenuTrigger
             aria-label="Video options"
-            className="rounded-full p-1.5 text-sub hover:bg-hover hover:text-foreground"
+            className="rounded-full p-1.5 text-muted-foreground hover:bg-accent hover:text-foreground"
           >
             <MoreVertical className="size-4" />
           </DropdownMenuTrigger>
@@ -207,7 +207,7 @@ export default function VideoDetailPage({ params }: { params: Promise<{ id: stri
                         v.isSelected && "ring-2 ring-primary ring-offset-2 ring-offset-background",
                       )}
                     />
-                    <span className="font-mono text-[11px] text-sub">
+                    <span className="font-mono text-[11px] text-muted-foreground">
                       {VARIANT_TAGS[i]}
                       {v.estCtr != null && ` · ${v.estCtr}% CTR`}
                     </span>
@@ -228,7 +228,7 @@ export default function VideoDetailPage({ params }: { params: Promise<{ id: stri
               onKeyDown={(e) => e.key === "Enter" && e.currentTarget.blur()}
               className="w-full rounded-lg border border-transparent bg-transparent px-2 py-1 -mx-2 text-2xl font-bold outline-none transition-colors hover:border-border focus:border-ring"
             />
-            <p className="mt-1 px-0 text-sm text-sub">
+            <p className="mt-1 px-0 text-sm text-muted-foreground">
               {video.stage === "published" && video.views != null
                 ? `${formatCompact(video.views)} views · ${timeAgo(video.publishedAt ?? video.createdAt)}`
                 : `${stage.label}${video.nextAction ? ` · next: ${video.nextAction}` : ""}`}
