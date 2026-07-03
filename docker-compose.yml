@@ -1,0 +1,15 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: throughline-postgres
+    environment:
+      POSTGRES_USER: throughline
+      POSTGRES_PASSWORD: throughline
+      POSTGRES_DB: throughline
+    ports:
+      - "5434:5432"
+    volumes:
+      - throughline-pg:/var/lib/postgresql/data
+
+volumes:
+  throughline-pg:

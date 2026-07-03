@@ -1,0 +1,214 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+/* ---------------------------------------------------------------------------
+   Throughline theming — YouTube Dark (default) + YouTube Light.
+
+   Three layers:
+     1. Raw palette vars keyed by [data-theme] (from the design handoff tokens)
+     2. shadcn semantic tokens mapped onto the raw palette
+     3. `@theme inline` registering everything as Tailwind utilities
+
+   Rules: components use semantic/custom tokens only — never `dark:` variants,
+   never raw hex. Theme switching = next-themes flipping `data-theme` on <html>.
+   A future "minimal" theme is a new [data-theme] block + AppShell shell branch.
+   --------------------------------------------------------------------------- */
+
+/* 1. Raw palettes ---------------------------------------------------------- */
+:root,
+[data-theme="yt-dark"] {
+  color-scheme: dark;
+  --bg: #0f0f0f;
+  --surface: #212121;
+  --soft: #181818;
+  --hover: #272727;
+  --text: #f1f1f1;
+  --sub: #aaaaaa;
+  --sub2: #717171;
+  --body-text: #d4d4d4;
+  --line: rgba(255, 255, 255, 0.14);
+  --line-soft: #272727;
+  --yt-red: #ff0000;
+  --thumb-r: 12px;
+  --thumb-accent: #ffd64a;
+  --chip: #272727;
+  --chip-text: #f1f1f1;
+  --chip-active-bg: #f1f1f1;
+  --chip-active-text: #0f0f0f;
+  --search-bg: #121212;
+  --search-border: #303030;
+  --ghost-bg: #181818;
+  --ghost-border: #3a3a3a;
+}
+
+[data-theme="yt-light"] {
+  color-scheme: light;
+  --bg: #ffffff;
+  --surface: #f9f9f9;
+  --soft: #f8f8f8;
+  --hover: #f2f2f2;
+  --text: #0f0f0f;
+  --sub: #606060;
+  --sub2: #909090;
+  --body-text: #3a3a3a;
+  --line: #e5e5e5;
+  --line-soft: #e5e5e5;
+  --chip: #f2f2f2;
+  --chip-text: #0f0f0f;
+  --chip-active-bg: #0f0f0f;
+  --chip-active-text: #ffffff;
+  --search-bg: #ffffff;
+  --search-border: #cccccc;
+  --ghost-bg: #f8f8f8;
+  --ghost-border: #cccccc;
+}
+
+/* Theme-independent: pipeline stage + beat-kind colors (from handoff) */
+:root {
+  --stage-idea: #9aa4b2;
+  --stage-scripting: #e5674b;
+  --stage-recording: #3e86c9;
+  --stage-editing: #d99a00;
+  --stage-packaging: #2c9c86;
+  --stage-published: #e5484d;
+  --beat-hook: #e5674b;
+  --beat-rehook: #e0a83b;
+  --beat-body: #2c9c86;
+  --beat-conclusion: #7c6bd6;
+  --saved-dot: #2dd4a7;
+}
+
+/* 2. shadcn semantic tokens ride the raw palette --------------------------- */
+:root {
+  --background: var(--bg);
+  --foreground: var(--text);
+  --card: var(--surface);
+  --card-foreground: var(--text);
+  --popover: var(--surface);
+  --popover-foreground: var(--text);
+  --primary: var(--yt-red);
+  --primary-foreground: #ffffff;
+  --secondary: var(--hover);
+  --secondary-foreground: var(--text);
+  --muted: var(--soft);
+  --muted-foreground: var(--sub);
+  --accent: var(--hover);
+  --accent-foreground: var(--text);
+  --destructive: #e5484d;
+  --border: var(--line);
+  --input: var(--line);
+  --ring: var(--sub2);
+  --radius: 0.75rem;
+  --chart-1: var(--stage-scripting);
+  --chart-2: var(--stage-recording);
+  --chart-3: var(--stage-editing);
+  --chart-4: var(--stage-packaging);
+  --chart-5: var(--stage-published);
+  --sidebar: var(--bg);
+  --sidebar-foreground: var(--text);
+  --sidebar-primary: var(--yt-red);
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: var(--hover);
+  --sidebar-accent-foreground: var(--text);
+  --sidebar-border: var(--line);
+  --sidebar-ring: var(--sub2);
+}
+
+/* 3. Tailwind utility registration — MUST stay `inline` -------------------- */
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+
+  /* Throughline custom tokens */
+  --color-surface: var(--surface);
+  --color-soft: var(--soft);
+  --color-hover: var(--hover);
+  --color-sub: var(--sub);
+  --color-sub2: var(--sub2);
+  --color-body-text: var(--body-text);
+  --color-line-soft: var(--line-soft);
+  --color-yt-red: var(--yt-red);
+  --color-thumb-accent: var(--thumb-accent);
+  --color-chip: var(--chip);
+  --color-chip-text: var(--chip-text);
+  --color-chip-active-bg: var(--chip-active-bg);
+  --color-chip-active-text: var(--chip-active-text);
+  --color-search-bg: var(--search-bg);
+  --color-search-border: var(--search-border);
+  --color-ghost-bg: var(--ghost-bg);
+  --color-ghost-border: var(--ghost-border);
+  --color-saved-dot: var(--saved-dot);
+
+  --color-stage-idea: var(--stage-idea);
+  --color-stage-scripting: var(--stage-scripting);
+  --color-stage-recording: var(--stage-recording);
+  --color-stage-editing: var(--stage-editing);
+  --color-stage-packaging: var(--stage-packaging);
+  --color-stage-published: var(--stage-published);
+  --color-beat-hook: var(--beat-hook);
+  --color-beat-rehook: var(--beat-rehook);
+  --color-beat-body: var(--beat-body);
+  --color-beat-conclusion: var(--beat-conclusion);
+
+  --font-sans: var(--font-roboto);
+  --font-mono: var(--font-jbmono);
+  --font-anton: var(--font-anton);
+
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+  --radius-thumb: var(--thumb-r);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  html {
+    @apply font-sans;
+  }
+}
+
+@layer utilities {
+  /* JetBrains Mono uppercase micro-label (10px / 1.5px tracking, per handoff) */
+  .mono-label {
+    @apply font-mono text-[10px] font-semibold uppercase tracking-[1.5px] text-sub2;
+  }
+}
