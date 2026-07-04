@@ -312,16 +312,16 @@ function ResearchPageModal({
   return (
     <Dialog open={note !== null} onOpenChange={(o) => !o && onClose()}>
       <DialogContent
-        className="flex h-[85svh] flex-col gap-0 overflow-hidden p-0 sm:max-w-4xl"
+        className="flex h-[85svh] flex-col gap-0 overflow-hidden p-0 sm:max-w-3xl"
         onOpenAutoFocus={(e) => e.preventDefault()}
       >
         {note && (
-          <div key={note.id} className="flex min-h-0 flex-1 flex-col">
+          <div key={note.id} className="min-h-0 flex-1 overflow-y-auto">
             <DialogHeader className="sr-only">
               <DialogTitle>{note.title}</DialogTitle>
               <DialogDescription>Research page</DialogDescription>
             </DialogHeader>
-            <div className="mx-auto flex min-h-0 w-full max-w-[720px] flex-1 flex-col px-8">
+            <div className="px-10 pb-16 pt-8">
               <input
                 aria-label="Page title"
                 value={title ?? note.title}
@@ -334,9 +334,9 @@ function ResearchPageModal({
                 }}
                 onKeyDown={(e) => e.key === "Enter" && e.currentTarget.blur()}
                 placeholder="Untitled"
-                className="mt-10 w-full bg-transparent text-3xl font-bold leading-tight outline-none placeholder:text-muted-foreground/50"
+                className="w-full bg-transparent text-3xl font-bold leading-tight outline-none placeholder:text-muted-foreground/50"
               />
-              <div className="mt-4 min-h-0 flex-1 overflow-y-auto pb-16">
+              <div className="mt-3">
                 <DocEditor
                   initialValue={initialContent}
                   placeholder="Start writing…"
