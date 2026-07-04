@@ -17,8 +17,10 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { ArrowLeft, GripVertical, Plus, Settings2 } from "lucide-react";
+import { ArrowLeft, Check, Copy, GripVertical, Plus, Settings2 } from "lucide-react";
 import Link from "next/link";
+import { useState } from "react";
+import { toast } from "sonner";
 
 import { StatTile } from "@/components/video/stat-tile";
 import { ThumbnailPackaging } from "@/components/video/thumbnail-packaging";
@@ -40,6 +42,45 @@ import { formatDuration } from "@/lib/runtime";
 import { STAGE_META } from "@/lib/stages";
 import { cn } from "@/lib/utils";
 import type { VideoDetail } from "@/trpc/types";
+
+/** Whole script as markdown: title, then one `## Label` section per beat with
+ *  its prose. Handy for pasting into an AI for a review pass. */
+function scriptToMarkdown(title: string, beats: TimedBeat[]): string {
+  const out = [`# ${title.trim() || "Untitled"}`];
+  for (const b of beats) {
+    out.push(`## ${b.label}`);
+    if (b.text.trim()) out.push(b.text.trim());
+  }
+  return out.join("\n\n") + "\n";
+}
+
+function CopyMarkdownButton({ title, beats }: { title: string; beats: TimedBeat[] }) {
+  const [copied, setCopied] = useState(false);
+
+  async function copy() {
+    try {
+      await navigator.clipboard.writeText(scriptToMarkdown(title, beats));
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch {
+      toast.error("Couldn't copy to clipboard");
+    }
+  }
+
+  return (
+    <button
+      onClick={copy}
+      className="flex items-center justify-center gap-2 rounded-lg border px-3 py-2 text-[13px] text-muted-foreground transition-colors hover:bg-accent hover:text-foreground active:scale-[0.99]"
+    >
+      {copied ? (
+        <Check className="size-3.5 text-stage-published" />
+      ) : (
+        <Copy className="size-3.5" />
+      )}
+      {copied ? "Copied" : "Copy as Markdown"}
+    </button>
+  );
+}
 
 function OutlineRow({
   beat,
@@ -167,6 +208,8 @@ export function OutlineRail({
         <StatTile label="Runtime" value={formatDuration(totalSec)} />
         <StatTile label="Words" value={String(totalWords)} />
       </div>
+
+      <CopyMarkdownButton title={video.title} beats={beats} />
 
       <div>
         <p className="mono-label mb-2">Script outline</p>

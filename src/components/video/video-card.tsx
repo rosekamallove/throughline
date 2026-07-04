@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 
+import { OpenScriptButton } from "@/components/video/open-script-button";
 import { ThumbnailPackaging } from "@/components/video/thumbnail-packaging";
 import { VideoCardMenu } from "@/components/video/video-card-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -55,6 +56,7 @@ export function VideoCard({
             {formatDuration(video.durationSec)}
           </span>
         )}
+        {!viewerMode && <OpenScriptButton videoId={video.id} />}
       </div>
 
       {viewerMode ? (

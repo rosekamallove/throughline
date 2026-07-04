@@ -29,6 +29,7 @@ import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 import { toast } from "sonner";
 
+import { OpenScriptButton } from "@/components/video/open-script-button";
 import { ThumbnailPackaging } from "@/components/video/thumbnail-packaging";
 import { VideoCardMenu } from "@/components/video/video-card-menu";
 import { formatCompact, timeAgo } from "@/lib/format";
@@ -83,12 +84,15 @@ function BoardCard({ video }: { video: Video }) {
 function BoardCardBody({ video }: { video: Video }) {
   return (
     <div className="rounded-xl border bg-card p-2.5 shadow-xs transition-shadow hover:shadow-sm">
-      <ThumbnailPackaging
-        color={video.packagingColor}
-        lines={video.thumbText}
-        imageUrl={video.thumbImageUrl}
-        alt={video.title}
-      />
+      <div className="relative">
+        <ThumbnailPackaging
+          color={video.packagingColor}
+          lines={video.thumbText}
+          imageUrl={video.thumbImageUrl}
+          alt={video.title}
+        />
+        <OpenScriptButton videoId={video.id} />
+      </div>
       <div className="mt-2 flex items-start gap-1">
         <div className="min-w-0 flex-1">
           <p className="line-clamp-2 text-[13px] font-medium leading-snug">{video.title}</p>
@@ -162,6 +166,9 @@ function BoardColumn({
           highlight && "bg-accent/60",
         )}
       >
+        {/* Input sits at the top because new ideas sort newest-first — so a
+            fresh idea lands right below the field the user just typed in. */}
+        {stage === "ideation" && <QuickAddCard />}
         <SortableContext items={videos.map((v) => v.id)} strategy={verticalListSortingStrategy}>
           {videos.map((video) => (
             <BoardCard key={video.id} video={video} />
@@ -177,14 +184,13 @@ function BoardColumn({
             Drop here
           </p>
         )}
-        {stage === "ideation" && <QuickAddCard />}
       </div>
     </m.div>
   );
 }
 
-/** Rapid idea capture at the bottom of the Ideation column. Enter creates
- *  and keeps the input open so several ideas can land in a row. */
+/** Rapid idea capture at the top of the Ideation column. Enter creates and
+ *  keeps the input open so several ideas can land in a row. */
 function QuickAddCard() {
   const trpc = useTRPC();
   const queryClient = useQueryClient();

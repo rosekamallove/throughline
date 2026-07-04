@@ -40,8 +40,14 @@ export const auth = betterAuth({
       create: {
         before: async (u) => {
           // Single-user tool on a public URL — reject everyone else at signup.
+          // The `code` is what surfaces to the OAuth callback: with it set,
+          // Better Auth redirects to errorCallbackURL?error=<code>&error_description=<message>
+          // (callback.mjs). Without a code it re-throws to a blank error page.
           if (u.email !== process.env.ALLOWED_EMAIL) {
-            throw new APIError("FORBIDDEN", { message: "Private beta" });
+            throw new APIError("FORBIDDEN", {
+              code: "EMAIL_NOT_ALLOWED",
+              message: "This is a private, single-user app and that account isn't on the allowlist.",
+            });
           }
           return { data: u };
         },

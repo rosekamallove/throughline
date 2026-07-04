@@ -77,14 +77,14 @@ export function Timeline({
 
   if (totalSec === 0) {
     return (
-      <p className="mt-5 rounded-lg border border-dashed px-3 py-2 text-[12px] text-muted-foreground duration-200 animate-in fade-in">
+      <p className="rounded-lg border border-dashed px-3 py-2 text-[12px] text-muted-foreground duration-200 animate-in fade-in">
         The timeline appears once the script has words.
       </p>
     );
   }
 
   return (
-    <div className="mt-5 duration-200 animate-in fade-in slide-in-from-top-1">
+    <div className="duration-200 animate-in fade-in slide-in-from-top-1">
       <div className="relative h-4">
         {rulerTicks.map((t) => (
           <span

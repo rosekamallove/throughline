@@ -352,6 +352,27 @@ export default function ScriptEditorPage({ params }: { params: Promise<{ id: str
 
   return (
     <div className="flex h-full min-h-0 flex-col">
+      {/* Animate the row height (0fr↔1fr) so toggling the timeline slides the
+          columns below instead of snapping them. Timeline stays mounted so the
+          collapse is smooth in both directions. */}
+      <div
+        className={cn(
+          "grid shrink-0 transition-[grid-template-rows] duration-300 ease-[cubic-bezier(0.32,0.72,0,1)]",
+          rails.timeline ? "grid-rows-[1fr]" : "grid-rows-[0fr]",
+        )}
+      >
+        <div className="min-h-0 overflow-hidden">
+          <div className="border-b px-6 py-3">
+            <Timeline
+              beats={timed}
+              customKinds={customKinds}
+              activeId={activeId}
+              totalSec={totalSec}
+              onSelectBeat={setActiveId}
+            />
+          </div>
+        </div>
+      </div>
       <div className={cn("flex min-h-0 flex-1", dragging && "cursor-col-resize select-none")}>
         <div className="flex shrink-0" style={{ width: rails.leftWidth }}>
           <OutlineRail
@@ -429,16 +450,6 @@ export default function ScriptEditorPage({ params }: { params: Promise<{ id: str
             <p className="mt-2 font-mono text-[12px] text-muted-foreground">
               {timed.length} beats · {totalWords} words · {formatDuration(totalSec)}
             </p>
-
-            {rails.timeline && (
-              <Timeline
-                beats={timed}
-                customKinds={customKinds}
-                activeId={activeId}
-                totalSec={totalSec}
-                onSelectBeat={setActiveId}
-              />
-            )}
 
             <div className="mt-8 flex flex-col gap-4">
               {timed.map((beat) => (

@@ -88,12 +88,14 @@
 
 /* Product content colors — theme-independent (from the design handoff) */
 :root {
-  --stage-idea: #9aa4b2;
-  --stage-scripting: #e5674b;
-  --stage-recording: #3e86c9;
-  --stage-editing: #d99a00;
-  --stage-packaging: #2c9c86;
-  --stage-published: #e5484d;
+  /* One hue per pipeline stage. Var names are legacy (predate the current
+     stage set); the trailing comment is the stage each actually paints. */
+  --stage-idea: #9aa4b2; /* ideation — slate */
+  --stage-scripting: #3e86c9; /* scripting — blue */
+  --stage-recording: #22b8cf; /* scheduled — cyan */
+  --stage-editing: #d99a00; /* production — amber */
+  --stage-packaging: #7c6bd6; /* packaging — violet */
+  --stage-published: #37b24d; /* published — green */
   --beat-hook: #e5674b;
   --beat-rehook: #e0a83b;
   --beat-body: #2c9c86;

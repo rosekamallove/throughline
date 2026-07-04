@@ -33,7 +33,7 @@ export function SiteHeader({ userInitial = "R" }: { userInitial?: string }) {
 
   return (
     <header className="flex h-14 shrink-0 items-center gap-4 border-b px-5">
-      <Link href="/" aria-label="Home">
+      <Link href="/" aria-label="Home" className="flex items-center">
         <Logo className="text-[19px]" />
       </Link>
 

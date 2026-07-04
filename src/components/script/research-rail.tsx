@@ -5,7 +5,7 @@ import {
   ChevronRight,
   ExternalLink,
   FileText,
-  Maximize2,
+  PanelRight,
   Play,
   Plus,
   X,
@@ -16,14 +16,8 @@ import { toast } from "sonner";
 
 import { DocEditor } from "@/components/script/doc-editor";
 import { RailSection } from "@/components/script/rail-section";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { useEditorPrefs } from "@/lib/editor-prefs";
 import { cn } from "@/lib/utils";
 import { useTRPC } from "@/trpc/client";
 import type { RouterOutputs } from "@/trpc/types";
@@ -43,13 +37,14 @@ export function youtubeIdFromUrl(url: string): string | null {
 export function ResearchRail({ videoId }: { videoId: string }) {
   const trpc = useTRPC();
   const queryClient = useQueryClient();
+  const [{ rightWidth }] = useEditorPrefs();
   const researchKey = trpc.research.byVideo.queryKey({ videoId });
   const { data } = useQuery(trpc.research.byVideo.queryOptions({ videoId }));
   const notes = data?.notes ?? [];
   const references = data?.references ?? [];
 
   const [openId, setOpenId] = useState<string | null>(null);
-  const [modalId, setModalId] = useState<string | null>(null);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
 
   // The query cache is the draft store: every keystroke patches the cached
   // note immediately (so remounts — expand/collapse, modal handoff — always
@@ -121,7 +116,7 @@ export function ResearchRail({ videoId }: { videoId: string }) {
         clearTimeout(timers.current[res.id]);
         delete timers.current[res.id];
         setOpenId((id) => (id === res.id ? null : id));
-        setModalId((id) => (id === res.id ? null : id));
+        setExpandedId((id) => (id === res.id ? null : id));
         invalidate();
       },
     }),
@@ -141,7 +136,7 @@ export function ResearchRail({ videoId }: { videoId: string }) {
   const contentFor = (note: Note): Value =>
     (note.content as Value | null) ?? EMPTY_DOC;
 
-  const modalNote = notes.find((n) => n.id === modalId) ?? null;
+  const expandedNote = notes.find((n) => n.id === expandedId) ?? null;
 
   return (
     <>
@@ -164,10 +159,10 @@ export function ResearchRail({ videoId }: { videoId: string }) {
             key={note.id}
             note={note}
             open={openId === note.id}
-            inModal={modalId === note.id}
+            expanded={expandedId === note.id}
             initialContent={contentFor(note)}
             onToggle={() => setOpenId((id) => (id === note.id ? null : note.id))}
-            onExpand={() => setModalId(note.id)}
+            onExpand={() => setExpandedId(note.id)}
             onRename={(title) => renameNote(note.id, title)}
             onDelete={() => noteDelete.mutate({ id: note.id })}
             onChange={(value) => scheduleSave(note.id, value)}
@@ -186,12 +181,13 @@ export function ResearchRail({ videoId }: { videoId: string }) {
         ))}
       </RailSection>
 
-      <ResearchPageModal
-        note={modalNote}
-        initialContent={modalNote ? contentFor(modalNote) : EMPTY_DOC}
-        onClose={() => setModalId(null)}
-        onRename={(title) => modalNote && renameNote(modalNote.id, title)}
-        onChange={(value) => modalNote && scheduleSave(modalNote.id, value)}
+      <ResearchPageSidePanel
+        note={expandedNote}
+        initialContent={expandedNote ? contentFor(expandedNote) : EMPTY_DOC}
+        width={rightWidth}
+        onClose={() => setExpandedId(null)}
+        onRename={(title) => expandedNote && renameNote(expandedNote.id, title)}
+        onChange={(value) => expandedNote && scheduleSave(expandedNote.id, value)}
       />
     </>
   );
@@ -200,7 +196,7 @@ export function ResearchRail({ videoId }: { videoId: string }) {
 function NotePage({
   note,
   open,
-  inModal,
+  expanded,
   initialContent,
   onToggle,
   onExpand,
@@ -210,7 +206,7 @@ function NotePage({
 }: {
   note: Note;
   open: boolean;
-  inModal: boolean;
+  expanded: boolean;
   initialContent: Value;
   onToggle: () => void;
   onExpand: () => void;
@@ -259,11 +255,11 @@ function NotePage({
         )}
         <div className="flex shrink-0 items-center opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100">
           <button
-            aria-label={`Expand ${note.title}`}
+            aria-label={`Open ${note.title} in side panel`}
             onClick={onExpand}
             className="rounded p-1 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
           >
-            <Maximize2 className="size-3" />
+            <PanelRight className="size-3.5" />
           </button>
           <button
             aria-label={`Delete ${note.title}`}
@@ -276,9 +272,9 @@ function NotePage({
       </div>
       {open && (
         <div className="max-h-[300px] overflow-y-auto border-t px-3 py-2.5 duration-200 animate-in fade-in slide-in-from-top-1">
-          {inModal ? (
+          {expanded ? (
             <p className="py-1 text-[12px] text-muted-foreground">
-              Editing in the expanded view…
+              Open in the side panel…
             </p>
           ) : (
             <DocEditor
@@ -294,15 +290,78 @@ function NotePage({
   );
 }
 
-function ResearchPageModal({
+/** A full-height reference panel docked to the right edge, sized to the
+ *  research sidebar. Deliberately non-modal: no backdrop, no focus trap, so
+ *  the script stays visible and editable while a note is open beside it. */
+function ResearchPageSidePanel({
   note,
   initialContent,
+  width,
   onClose,
   onRename,
   onChange,
 }: {
   note: Note | null;
   initialContent: Value;
+  width: number;
+  onClose: () => void;
+  onRename: (title: string) => void;
+  onChange: (value: Value) => void;
+}) {
+  const open = note !== null;
+  // Retain the last note (and its content) through the slide-out so the panel
+  // animates away with content instead of an empty box. Adjusting state during
+  // render is React's supported way to remember a previous prop; keyed by id so
+  // cache patches while typing (new note object, same id) don't churn.
+  const [shown, setShown] = useState(note);
+  const [shownContent, setShownContent] = useState(initialContent);
+  if (note && note.id !== shown?.id) {
+    setShown(note);
+    setShownContent(initialContent);
+  }
+
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [open, onClose]);
+
+  return (
+    <div
+      role="dialog"
+      aria-modal={false}
+      aria-hidden={!open}
+      className={cn(
+        "fixed inset-y-0 right-0 z-40 flex flex-col border-l bg-card shadow-2xl",
+        "transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)]",
+        open ? "translate-x-0" : "pointer-events-none translate-x-full",
+      )}
+      style={{ width }}
+    >
+      {shown && (
+        <ResearchPanelBody
+          key={shown.id}
+          note={shown}
+          content={shownContent}
+          onClose={onClose}
+          onRename={onRename}
+          onChange={onChange}
+        />
+      )}
+    </div>
+  );
+}
+
+function ResearchPanelBody({
+  note,
+  content,
+  onClose,
+  onRename,
+  onChange,
+}: {
+  note: Note;
+  content: Value;
   onClose: () => void;
   onRename: (title: string) => void;
   onChange: (value: Value) => void;
@@ -310,44 +369,35 @@ function ResearchPageModal({
   const [title, setTitle] = useState<string | null>(null);
 
   return (
-    <Dialog open={note !== null} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent
-        className="flex h-[85svh] flex-col gap-0 overflow-hidden p-0 sm:max-w-3xl"
-        onOpenAutoFocus={(e) => e.preventDefault()}
-      >
-        {note && (
-          <div key={note.id} className="min-h-0 flex-1 overflow-y-auto">
-            <DialogHeader className="sr-only">
-              <DialogTitle>{note.title}</DialogTitle>
-              <DialogDescription>Research page</DialogDescription>
-            </DialogHeader>
-            <div className="px-10 pb-16 pt-8">
-              <input
-                aria-label="Page title"
-                value={title ?? note.title}
-                onChange={(e) => setTitle(e.target.value)}
-                onBlur={() => {
-                  if (title !== null && title.trim() && title !== note.title) {
-                    onRename(title.trim());
-                  }
-                  setTitle(null);
-                }}
-                onKeyDown={(e) => e.key === "Enter" && e.currentTarget.blur()}
-                placeholder="Untitled"
-                className="w-full bg-transparent text-3xl font-bold leading-tight outline-none placeholder:text-muted-foreground/50"
-              />
-              <div className="mt-3">
-                <DocEditor
-                  initialValue={initialContent}
-                  placeholder="Start writing…"
-                  onChange={onChange}
-                />
-              </div>
-            </div>
-          </div>
-        )}
-      </DialogContent>
-    </Dialog>
+    <>
+      <header className="flex h-11 shrink-0 items-center gap-2 border-b pl-3 pr-2">
+        <FileText className="size-4 shrink-0 text-muted-foreground" />
+        <input
+          aria-label="Page title"
+          value={title ?? note.title}
+          onChange={(e) => setTitle(e.target.value)}
+          onBlur={() => {
+            if (title !== null && title.trim() && title !== note.title) {
+              onRename(title.trim());
+            }
+            setTitle(null);
+          }}
+          onKeyDown={(e) => e.key === "Enter" && e.currentTarget.blur()}
+          placeholder="Untitled"
+          className="min-w-0 flex-1 bg-transparent text-[14px] font-semibold outline-none placeholder:text-muted-foreground/50"
+        />
+        <button
+          aria-label="Close panel"
+          onClick={onClose}
+          className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground active:scale-95"
+        >
+          <X className="size-4" />
+        </button>
+      </header>
+      <div className="min-h-0 flex-1 overflow-y-auto px-5 py-5">
+        <DocEditor initialValue={content} placeholder="Start writing…" onChange={onChange} />
+      </div>
+    </>
   );
 }
 
