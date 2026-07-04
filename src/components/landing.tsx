@@ -1,10 +1,12 @@
-import Image from "next/image";
+import { ChevronDown, Check, FileText, Play, Plus, Volume2 } from "lucide-react";
 import Link from "next/link";
 
 import { LogoMark } from "@/components/logo";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
-/** Two sections: hero with the editor, bento with everything else. */
+/** Two sections: hero with a crafted editor mock, bento of feature mocks.
+ *  Everything is built from the product's own tokens; no screenshots. */
 export function Landing() {
   return (
     <div className="min-h-dvh bg-background text-foreground">
@@ -37,32 +39,19 @@ export function Landing() {
           </div>
         </div>
 
-        <div className="mx-auto mt-14 max-w-6xl px-6 delay-200 duration-700 animate-in fade-in slide-in-from-bottom-4">
-          <div className="relative overflow-hidden rounded-2xl border bg-card shadow-2xl shadow-foreground/10">
-            <Image
-              src="/landing/editor.png"
-              alt="The Throughline script editor: beats with live pacing, shots and research in the rail"
-              width={1720}
-              height={1000}
-              priority
-              className="w-full"
-            />
-            <div
-              aria-hidden
-              className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-background/60 to-transparent"
-            />
-          </div>
+        <div className="mx-auto mt-14 max-w-5xl px-6 delay-200 duration-700 animate-in fade-in slide-in-from-bottom-4">
+          <EditorMock />
         </div>
       </section>
 
-      <section className="mx-auto max-w-6xl px-6 pb-10 pt-20 sm:pt-28">
-        <div className="grid gap-3 md:grid-cols-3 md:[grid-template-rows:auto_auto_auto]">
+      <section className="mx-auto max-w-6xl px-6 pb-10 pt-20 sm:pt-24">
+        <div className="grid gap-3 md:grid-cols-3">
           <Tile className="md:col-span-2 md:row-span-2">
             <TileText
               title="Your channel is the dashboard"
-              body="Published videos with real thumbnails and numbers, next to what you're making. Titles and thumbnails get judged in the feed, not in a vacuum."
+              body="Published videos with real numbers, next to what you're making. Titles and thumbnails get judged in the feed, not in a vacuum."
             />
-            <Bleed src="/landing/channel.png" alt="The dashboard: your channel feed with drafts and published videos" />
+            <FeedMock />
           </Tile>
 
           <Tile>
@@ -70,17 +59,7 @@ export function Landing() {
               title="Shots anchored to your words"
               body="Highlight a line, capture the b-roll idea. The words stay marked in the script."
             />
-            <div className="px-6 pb-6">
-              <div className="overflow-hidden rounded-lg border">
-                <Image
-                  src="/landing/shot.png"
-                  alt="A hook beat with the shot's words highlighted in amber"
-                  width={636}
-                  height={115}
-                  className="w-full"
-                />
-              </div>
-            </div>
+            <ShotMock />
           </Tile>
 
           <Tile>
@@ -88,17 +67,7 @@ export function Landing() {
               title="Research on the same screen"
               body="Notes as documents, reference videos playable in the rail. Nothing lives in another tab."
             />
-            <div className="relative min-h-[240px] flex-1">
-              <div className="absolute inset-x-6 top-0 overflow-hidden rounded-t-xl border shadow-sm">
-                <Image
-                  src="/landing/research.png"
-                  alt="Research pages and a playable reference video in the editor rail"
-                  width={302}
-                  height={570}
-                  className="w-full"
-                />
-              </div>
-            </div>
+            <ResearchMock />
           </Tile>
 
           <Tile className="md:col-span-2">
@@ -106,7 +75,7 @@ export function Landing() {
               title="Idea to published, one board"
               body="Six stages with drag and drop. Capture ideas at the bottom of the column, ship them out the other end."
             />
-            <Bleed src="/landing/board.png" alt="The pipeline board with six stages" />
+            <BoardMock />
           </Tile>
 
           <Tile>
@@ -114,17 +83,7 @@ export function Landing() {
               title="Hear it before you record"
               body="One click reads the script aloud, per beat or start to finish, so you can judge the flow."
             />
-            <div className="px-6 pb-6">
-              <div className="overflow-hidden rounded-lg border">
-                <Image
-                  src="/landing/listen.png"
-                  alt="The Listen control with its voice picker open"
-                  width={480}
-                  height={380}
-                  className="w-full"
-                />
-              </div>
-            </div>
+            <ListenMock />
           </Tile>
         </div>
 
@@ -139,6 +98,30 @@ export function Landing() {
   );
 }
 
+/* ------------------------------------------------------------------ */
+/* shared scraps                                                       */
+
+const BEAT = {
+  hook: "var(--beat-hook)",
+  rehook: "var(--beat-rehook)",
+  body: "var(--beat-body)",
+  conclusion: "var(--beat-conclusion)",
+} as const;
+
+function BeatTag({ color, children }: { color: string; children: React.ReactNode }) {
+  return (
+    <span
+      className="rounded-md px-1.5 py-0.5 font-mono text-[9px] font-semibold uppercase tracking-[1.5px]"
+      style={{
+        color,
+        background: `color-mix(in oklab, ${color} 16%, transparent)`,
+      }}
+    >
+      {children}
+    </span>
+  );
+}
+
 function Tile({
   className = "",
   children,
@@ -147,9 +130,7 @@ function Tile({
   children: React.ReactNode;
 }) {
   return (
-    <div
-      className={`flex flex-col overflow-hidden rounded-2xl border bg-card ${className}`}
-    >
+    <div className={cn("flex flex-col overflow-hidden rounded-2xl border bg-card", className)}>
       {children}
     </div>
   );
@@ -166,18 +147,404 @@ function TileText({ title, body }: { title: string; body: string }) {
   );
 }
 
-/** Screenshot that bleeds off the tile's bottom-right corner. */
-function Bleed({ src, alt }: { src: string; alt: string }) {
+/* ------------------------------------------------------------------ */
+/* hero: three-pane editor                                             */
+
+const OUTLINE = [
+  { color: BEAT.hook, label: "Hook", time: "0:12" },
+  { color: BEAT.body, label: "Context & Authority", time: "0:31" },
+  { color: BEAT.rehook, label: "Re-hook", time: "0:07" },
+  { color: BEAT.body, label: "Section 1 · Get the vibe", time: "0:24" },
+  { color: BEAT.body, label: "Section 2 · Rank the subs", time: "0:22" },
+  { color: BEAT.conclusion, label: "Conclusion", time: "0:10" },
+] as const;
+
+const PACING = [
+  { color: BEAT.hook, w: "9%" },
+  { color: BEAT.body, w: "24%" },
+  { color: BEAT.rehook, w: "6%" },
+  { color: BEAT.body, w: "19%" },
+  { color: BEAT.body, w: "17%" },
+  { color: BEAT.body, w: "17%" },
+  { color: BEAT.conclusion, w: "8%" },
+] as const;
+
+function EditorMock() {
   return (
-    <div className="relative min-h-[260px] flex-1">
-      <div className="absolute inset-y-0 left-6 right-0 overflow-hidden rounded-tl-xl border-l border-t shadow-sm">
-        <Image
-          src={src}
-          alt={alt}
-          width={1720}
-          height={1000}
-          className="h-full w-full object-cover object-left-top"
-        />
+    <div className="overflow-hidden rounded-2xl border bg-card text-left shadow-2xl shadow-foreground/10">
+      <div className="grid md:grid-cols-[210px_minmax(0,1fr)_230px]">
+        {/* outline rail */}
+        <aside className="hidden border-r p-5 md:block">
+          <div className="flex items-center justify-between text-[11px] text-muted-foreground">
+            <span>← Back</span>
+            <span className="flex items-center gap-1">
+              <span className="size-1.5 rounded-full bg-saved-dot" /> Saved
+            </span>
+          </div>
+          <div className="mt-4 flex gap-2">
+            <MiniStat value="2:26" label="runtime" />
+            <MiniStat value="335" label="words" />
+          </div>
+          <p className="mono-label mt-5">Script outline</p>
+          <ul className="mt-2 flex flex-col gap-0.5">
+            {OUTLINE.map((row) => (
+              <li
+                key={row.label}
+                className="flex items-center gap-2 rounded-md px-1.5 py-1 text-[11px] first:bg-muted"
+              >
+                <span className="size-1.5 shrink-0 rounded-full" style={{ background: row.color }} />
+                <span className="truncate">{row.label}</span>
+                <span className="ml-auto font-mono text-[10px] text-muted-foreground">
+                  {row.time}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </aside>
+
+        {/* script */}
+        <div className="p-6 sm:p-8">
+          <div className="flex items-center justify-between">
+            <p className="mono-label">Script</p>
+            <span className="flex items-center overflow-hidden rounded-full bg-secondary text-[11px] font-medium">
+              <span className="flex items-center gap-1.5 py-1 pl-3 pr-2">
+                <Volume2 className="size-3" /> Listen
+              </span>
+              <span aria-hidden className="h-3 w-px bg-border" />
+              <span className="px-1.5 py-1">
+                <ChevronDown className="size-3 text-muted-foreground" />
+              </span>
+            </span>
+          </div>
+          <h2 className="mt-2 text-xl font-bold tracking-tight sm:text-2xl">
+            I tried Reddit Marketing for 7 days
+          </h2>
+          <p className="mt-1 font-mono text-[10px] text-muted-foreground">
+            9 beats · 335 words · 2:26
+          </p>
+
+          <div className="mt-6 flex flex-col gap-5">
+            <div className="border-l-2 pl-4" style={{ borderColor: BEAT.hook }}>
+              <div className="flex items-baseline gap-2">
+                <BeatTag color={BEAT.hook}>Hook</BeatTag>
+                <span className="text-[11px] font-medium text-muted-foreground">Hook</span>
+                <span className="ml-auto font-mono text-[10px] text-muted-foreground">
+                  27w · 0:12
+                </span>
+              </div>
+              <p className="mt-1.5 text-[13px] leading-relaxed text-foreground/90">
+                <span className="shot-mark">Reddit as a marketing channel has been trending</span>{" "}
+                hard lately. I wanted to see if it could actually get ME users, so I
+                ran a 7-day experiment.
+              </p>
+            </div>
+
+            <div className="pl-4">
+              <div className="flex items-baseline gap-2">
+                <BeatTag color={BEAT.rehook}>Re-hook</BeatTag>
+                <span className="text-[11px] font-medium text-muted-foreground">Re-hook</span>
+                <span className="ml-auto font-mono text-[10px] text-muted-foreground">
+                  17w · 0:07
+                </span>
+              </div>
+              <p className="mt-1.5 text-[13px] leading-relaxed text-foreground/90">
+                If you don&rsquo;t want YOUR posts shredded to pieces, stick around
+                till the end.
+              </p>
+            </div>
+
+            <div className="hidden pl-4 sm:block">
+              <div className="flex items-baseline gap-2">
+                <BeatTag color={BEAT.body}>Body</BeatTag>
+                <span className="text-[11px] font-medium text-muted-foreground">
+                  Section 1 · Get the vibe
+                </span>
+                <span className="ml-auto font-mono text-[10px] text-muted-foreground">
+                  55w · 0:24
+                </span>
+              </div>
+              <p className="mt-1.5 text-[13px] leading-relaxed text-foreground/90">
+                Before any experiment on a new platform, figure out if your ideal
+                customer even hangs out there…
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* coach rail */}
+        <aside className="hidden border-l p-5 lg:block">
+          <p className="mono-label">Pacing</p>
+          <div className="mt-2.5 flex h-1.5 gap-px overflow-hidden rounded-full">
+            {PACING.map((seg, i) => (
+              <span key={i} style={{ background: seg.color, width: seg.w }} />
+            ))}
+          </div>
+          <p className="mt-2 text-[11px] text-muted-foreground">
+            <span style={{ color: BEAT.hook }}>Hook</span>
+            <span className="font-mono"> · 8% of runtime</span>
+          </p>
+
+          <p className="mono-label mt-6">B-roll &amp; shots · 2</p>
+          <ul className="mt-2 flex flex-col gap-2">
+            <MiniShotRow text="Screen-rec: trending tab" />
+            <MiniShotRow text="Text overlay: “7 DAYS”" done />
+          </ul>
+
+          <p className="mono-label mt-6">Research · 1</p>
+          <div className="mt-2 flex items-center gap-1.5 text-[11px]">
+            <FileText className="size-3 text-muted-foreground" />
+            Competitor teardown
+          </div>
+        </aside>
+      </div>
+    </div>
+  );
+}
+
+function MiniStat({ value, label }: { value: string; label: string }) {
+  return (
+    <div className="flex-1 rounded-lg border px-2.5 py-1.5">
+      <p className="font-mono text-sm font-semibold">{value}</p>
+      <p className="mono-label mt-0.5 !text-[8px]">{label}</p>
+    </div>
+  );
+}
+
+function MiniShotRow({ text, done = false }: { text: string; done?: boolean }) {
+  return (
+    <li className="flex items-center gap-2 text-[11px]">
+      <span
+        className={cn(
+          "flex size-3.5 shrink-0 items-center justify-center rounded border",
+          done && "border-transparent bg-primary text-primary-foreground",
+        )}
+      >
+        {done && <Check className="size-2.5" />}
+      </span>
+      <span className={cn(done && "text-muted-foreground line-through")}>{text}</span>
+    </li>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* bento mocks                                                         */
+
+const FEED = [
+  {
+    color: "#D6336C",
+    lines: ["REDDIT", "MARKETING", "*7 DAYS*"],
+    title: "I tried Reddit Marketing for 7 DAYS",
+    meta: "In Production · finish the rough cut",
+    stage: "var(--stage-production)",
+  },
+  {
+    color: "#2F9E44",
+    lines: ["I SPENT", "*$5,000*", "ON ADS"],
+    title: "I spent $5,000 on Google Ads",
+    meta: "Scripting · finish the script",
+    stage: "var(--stage-scripting)",
+  },
+  {
+    color: "#3B5BDB",
+    lines: ["RANK *#1*", "IN CHATGPT"],
+    title: "How to rank in ChatGPT in 7 Days",
+    meta: "142K views · 3 weeks ago",
+    stage: "var(--stage-published)",
+  },
+  {
+    color: "#E8590C",
+    lines: ["YOUR NEXT", "*$1M* APP", "IN 2 MIN"],
+    title: "Find your next app idea in 2 minutes",
+    meta: "89K views · 1 month ago",
+    stage: "var(--stage-published)",
+  },
+] as const;
+
+function ThumbLine({ line }: { line: string }) {
+  const parts = line.split(/\*(.+?)\*/);
+  return (
+    <span className="block">
+      {parts.map((part, i) =>
+        i % 2 === 1 ? (
+          <span key={i} style={{ color: "var(--thumb-accent)" }}>
+            {part}
+          </span>
+        ) : (
+          part
+        ),
+      )}
+    </span>
+  );
+}
+
+function FeedMock() {
+  return (
+    <div className="grid flex-1 grid-cols-2 gap-x-5 gap-y-6 px-6 pb-6">
+      {FEED.map((v) => (
+        <div key={v.title} className="min-w-0">
+          <div
+            className="flex aspect-video items-center justify-center rounded-xl px-3"
+            style={{ background: v.color }}
+          >
+            <span className="font-anton text-center text-[clamp(14px,2.2vw,22px)] leading-[1.08] tracking-wide text-white [text-shadow:0_1px_2px_rgb(0_0_0/0.25)]">
+              {v.lines.map((line) => (
+                <ThumbLine key={line} line={line} />
+              ))}
+            </span>
+          </div>
+          <p className="mt-2 flex items-center gap-1.5 font-mono text-[9px] font-semibold uppercase tracking-[1.5px] text-muted-foreground">
+            <span className="size-1.5 rounded-full" style={{ background: v.stage }} />
+            {v.meta.split(" · ")[0]}
+          </p>
+          <p className="mt-0.5 truncate text-[13px] font-medium">{v.title}</p>
+          <p className="truncate text-[11px] text-muted-foreground">
+            {v.meta.split(" · ")[1]}
+          </p>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function ShotMock() {
+  return (
+    <div className="px-6 pb-6">
+      <p className="text-[13px] leading-relaxed text-foreground/90">
+        …opens with <span className="shot-mark">the product in hand</span>, no
+        intro at all…
+      </p>
+      <div className="mt-3 rounded-lg border bg-background px-3 py-2">
+        <div className="flex items-center gap-2.5">
+          <span className="size-3.5 shrink-0 rounded border" />
+          <span className="text-[12px]">Screen-rec: product close-up</span>
+        </div>
+        <p className="mt-1 truncate pl-6 text-[10px] italic text-muted-foreground">
+          &ldquo;the product in hand&rdquo;
+        </p>
+      </div>
+    </div>
+  );
+}
+
+function ResearchMock() {
+  return (
+    <div className="flex flex-1 flex-col gap-2.5 px-6 pb-6">
+      <p className="mono-label">Research · 2</p>
+      <div className="rounded-lg border bg-background">
+        <div className="flex items-center gap-1.5 px-3 py-2 text-[12px] font-medium">
+          <FileText className="size-3 text-muted-foreground" /> Competitor teardown
+        </div>
+        <p className="border-t px-3 py-2 text-[11px] leading-relaxed text-muted-foreground">
+          MKBHD opens with the product in hand. No intro.
+        </p>
+      </div>
+      <p className="mono-label mt-1.5">References · 1</p>
+      <div className="overflow-hidden rounded-lg border bg-background">
+        <div className="flex aspect-video items-center justify-center bg-foreground/80">
+          <span className="flex size-8 items-center justify-center rounded-full bg-black/70">
+            <Play className="size-3.5 fill-white text-white" />
+          </span>
+        </div>
+        <p className="truncate px-3 py-1.5 text-[11px] text-muted-foreground">
+          youtube.com/watch?v=dQw4…
+        </p>
+      </div>
+    </div>
+  );
+}
+
+const BOARD_COLS = [
+  {
+    label: "Ideation",
+    dot: "var(--stage-ideation)",
+    cards: ["Idea: build in public for 7 days", "Idea: $1M niches with AI"],
+    quickAdd: true,
+  },
+  {
+    label: "Scripting",
+    dot: "var(--stage-scripting)",
+    cards: ["I spent $5,000 on Google Ads"],
+    thumb: "#2F9E44",
+  },
+  {
+    label: "Production",
+    dot: "var(--stage-production)",
+    cards: ["I tried Reddit Marketing for 7 DAYS"],
+    thumb: "#D6336C",
+  },
+  {
+    label: "Published",
+    dot: "var(--stage-published)",
+    cards: ["How to rank in ChatGPT in 7 Days"],
+    thumb: "#3B5BDB",
+  },
+] as const;
+
+function BoardMock() {
+  return (
+    <div className="flex flex-1 gap-2.5 overflow-hidden px-6 pb-6">
+      {BOARD_COLS.map((col, i) => (
+        <div
+          key={col.label}
+          className={cn(
+            "flex w-40 shrink-0 flex-col gap-2 rounded-xl border bg-muted/40 p-2.5 sm:flex-1",
+            i > 1 && "hidden sm:flex",
+          )}
+        >
+          <p className="flex items-center gap-1.5 text-[11px] font-semibold">
+            <span className="size-1.5 rounded-full" style={{ background: col.dot }} />
+            {col.label}
+            <span className="font-mono text-[9px] font-normal text-muted-foreground">
+              {col.cards.length}
+            </span>
+          </p>
+          {col.cards.map((card) => (
+            <div key={card} className="rounded-lg border bg-card p-1.5 shadow-xs">
+              {"thumb" in col && (
+                <div className="mb-1.5 aspect-video rounded-md" style={{ background: col.thumb }} />
+              )}
+              <p className="line-clamp-2 text-[10px] font-medium leading-snug">{card}</p>
+            </div>
+          ))}
+          {"quickAdd" in col && (
+            <p className="flex items-center gap-1 rounded-lg border border-dashed px-2 py-1.5 text-[10px] text-muted-foreground">
+              <Plus className="size-2.5" /> New video
+            </p>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+const VOICES = ["Samantha", "Daniel", "Karen", "Ava"] as const;
+
+function ListenMock() {
+  return (
+    <div className="flex flex-1 flex-col items-start gap-2 px-6 pb-6">
+      <span className="flex items-center overflow-hidden rounded-full bg-secondary text-sm font-medium">
+        <span className="flex items-center gap-2 py-2 pl-4 pr-3">
+          <Volume2 className="size-4" /> Listen
+        </span>
+        <span aria-hidden className="h-4 w-px bg-border" />
+        <span className="px-2 py-2">
+          <ChevronDown className="size-3.5 text-muted-foreground" />
+        </span>
+      </span>
+      <div className="ml-6 w-44 rounded-xl border bg-popover p-1 shadow-md">
+        <p className="mono-label px-2 py-1.5">Voice</p>
+        {VOICES.map((voice, i) => (
+          <p
+            key={voice}
+            className={cn(
+              "flex items-center justify-between rounded-lg px-2 py-1.5 text-[12px]",
+              i === 0 && "bg-accent",
+            )}
+          >
+            {voice}
+            {i === 0 && <Check className="size-3" />}
+          </p>
+        ))}
       </div>
     </div>
   );
