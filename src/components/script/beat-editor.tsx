@@ -5,12 +5,17 @@ import { KEYS, NodeApi, type Value } from "platejs";
 import { Plate, useEditorRef, usePlateEditor } from "platejs/react";
 
 import { BasicNodesKit } from "@/components/editor/plugins/basic-nodes-kit";
+import { ShotKit } from "@/components/editor/plugins/shot-kit";
 import { Editor, EditorContainer } from "@/components/ui/editor";
 import { FloatingToolbar } from "@/components/ui/floating-toolbar";
 import { MarkToolbarButton } from "@/components/ui/mark-toolbar-button";
 import { ToolbarButton } from "@/components/ui/toolbar";
 
-function AddShotButton({ onAddShot }: { onAddShot?: (text: string) => void }) {
+function AddShotButton({
+  onAddShot,
+}: {
+  onAddShot?: (text: string, shotId: string) => void;
+}) {
   const editor = useEditorRef();
   if (!onAddShot) return null;
   return (
@@ -20,7 +25,14 @@ function AddShotButton({ onAddShot }: { onAddShot?: (text: string) => void }) {
         const selected = editor.selection
           ? editor.api.string(editor.selection).trim()
           : "";
-        if (selected) onAddShot(selected);
+        if (!selected) return;
+        const shotId = crypto.randomUUID();
+        // Mark the selected words so the shot stays anchored to the prose,
+        // then drop the pending mark so typing at the edge doesn't extend it.
+        editor.tf.addMark("shot", shotId);
+        editor.tf.collapse({ edge: "end" });
+        editor.tf.removeMark("shot");
+        onAddShot(selected, shotId);
       }}
     >
       <Clapperboard /> Shot
@@ -39,9 +51,12 @@ export function BeatEditor({
   initialValue: Value;
   placeholder?: string;
   onChange: (payload: { value: Value; text: string }) => void;
-  onAddShot?: (text: string) => void;
+  onAddShot?: (text: string, shotId: string) => void;
 }) {
-  const editor = usePlateEditor({ plugins: BasicNodesKit, value: initialValue });
+  const editor = usePlateEditor({
+    plugins: [...BasicNodesKit, ...ShotKit],
+    value: initialValue,
+  });
 
   return (
     <Plate

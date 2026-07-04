@@ -17,7 +17,7 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { GripVertical, Plus, Settings2 } from "lucide-react";
+import { ArrowLeft, GripVertical, Plus, Settings2 } from "lucide-react";
 import Link from "next/link";
 
 import { StatTile } from "@/components/video/stat-tile";
@@ -94,6 +94,7 @@ export function OutlineRail({
   activeId,
   totalWords,
   totalSec,
+  saving,
   onSelect,
   onReorder,
   onAddBeat,
@@ -105,6 +106,7 @@ export function OutlineRail({
   activeId: string | null;
   totalWords: number;
   totalSec: number;
+  saving: boolean;
   onSelect: (id: string) => void;
   onReorder: (orderedIds: string[]) => void;
   onAddBeat: (kind: BeatKind) => void;
@@ -126,7 +128,25 @@ export function OutlineRail({
   const stage = STAGE_META[video.stage];
 
   return (
-    <aside className="flex w-[284px] shrink-0 flex-col gap-5 overflow-y-auto border-r border-border p-5">
+    <aside className="flex w-full shrink-0 flex-col gap-5 overflow-y-auto border-r border-border p-5">
+      <div className="flex items-center justify-between">
+        <Link
+          href={`/video/${video.id}`}
+          className="flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground"
+        >
+          <ArrowLeft className="size-4" /> Back
+        </Link>
+        <span className="flex items-center gap-1.5 text-[12px] text-muted-foreground">
+          <span
+            className={cn(
+              "size-2 rounded-full",
+              saving ? "animate-pulse bg-stage-editing" : "bg-saved-dot",
+            )}
+          />
+          {saving ? "Saving…" : "Saved"}
+        </span>
+      </div>
+
       <Link href={`/video/${video.id}`} className="flex flex-col gap-3">
         <ThumbnailPackaging
           color={video.packagingColor}

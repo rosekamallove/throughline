@@ -53,7 +53,7 @@ export const researchRouter = createTRPCRouter({
         : 0;
       const [created] = await ctx.db
         .insert(notes)
-        .values({ videoId: input.videoId, title: input.title ?? "Notes", position })
+        .values({ videoId: input.videoId, title: input.title ?? "Untitled", position })
         .returning();
       return created;
     }),
@@ -63,7 +63,7 @@ export const researchRouter = createTRPCRouter({
       z.object({
         id: z.uuid(),
         title: z.string().min(1).max(120).optional(),
-        items: z.array(z.string().max(500)).max(100).optional(),
+        content: z.array(z.record(z.string(), z.unknown())).max(2000).optional(),
       }),
     )
     .mutation(async ({ ctx, input }) => {

@@ -209,3 +209,17 @@
     @apply font-mono text-[10px] font-semibold uppercase tracking-[1.5px] text-muted-foreground;
   }
 }
+
+@layer components {
+  /* Words a b-roll shot was cut from — kept visible in the script so the
+     shot list and the prose stay connected. */
+  .shot-mark {
+    border-radius: 3px;
+    background: color-mix(in oklab, var(--thumb-accent) 24%, transparent);
+    box-shadow: inset 0 -1.5px 0 color-mix(in oklab, var(--thumb-accent) 75%, transparent);
+    transition: background-color 150ms ease;
+  }
+  .shot-mark-hot {
+    background: color-mix(in oklab, var(--thumb-accent) 55%, transparent);
+  }
+}

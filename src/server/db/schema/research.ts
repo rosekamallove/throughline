@@ -2,7 +2,7 @@ import { index, integer, jsonb, pgTable, text, timestamp, uuid } from "drizzle-o
 
 import { videos } from "./videos";
 
-/** Freeform research lists — deliberately separate from the script beats. */
+/** Freeform research pages — deliberately separate from the script beats. */
 export const notes = pgTable(
   "notes",
   {
@@ -10,8 +10,9 @@ export const notes = pgTable(
     videoId: uuid("video_id")
       .notNull()
       .references(() => videos.id, { onDelete: "cascade" }),
-    title: text("title").notNull().default("Notes"),
-    items: jsonb("items").$type<string[]>().notNull().default([]),
+    title: text("title").notNull().default("Untitled"),
+    /** Plate document. */
+    content: jsonb("content").$type<unknown>(),
     position: integer("position").notNull().default(0),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),

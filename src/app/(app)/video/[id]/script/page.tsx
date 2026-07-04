@@ -1,23 +1,30 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, Share2 } from "lucide-react";
-import Link from "next/link";
 import type { Value } from "platejs";
 import { use, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { BeatBlock } from "@/components/script/beat-block";
 import { CoachPanel } from "@/components/script/coach-panel";
-import { ListenButton } from "@/components/script/listen-button";
+import { ListenControls } from "@/components/script/listen-controls";
 import { ManageKindsDialog } from "@/components/script/manage-kinds-dialog";
 import { OutlineRail } from "@/components/script/outline-rail";
 import type { TimedBeat } from "@/components/script/pacing-bar";
-import { ResearchPanel } from "@/components/script/research-panel";
-import { Button } from "@/components/ui/button";
+import { ResearchRail } from "@/components/script/research-rail";
 import { Skeleton } from "@/components/ui/skeleton";
 import { resolveBeatMeta, type BeatKind } from "@/lib/beats";
+import { RAIL_LIMITS, useEditorPrefs } from "@/lib/editor-prefs";
+import { hasShotMark, stripShotMark } from "@/lib/plate";
 import { countWords, formatDuration, wordsToSeconds } from "@/lib/runtime";
+import {
+  loadPreferredVoiceURI,
+  resolveVoice,
+  savePreferredVoiceURI,
+  speakBeats,
+  stopSpeech,
+  useVoices,
+} from "@/lib/tts";
 import type { BrollItem } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { useTRPC } from "@/trpc/client";
@@ -34,6 +41,44 @@ export default function ScriptEditorPage({ params }: { params: Promise<{ id: str
   const { data: customKinds = [] } = useQuery(trpc.beat.kinds.queryOptions());
   const beatsKey = trpc.beat.listByVideo.queryKey({ videoId });
   const [kindsOpen, setKindsOpen] = useState(false);
+  // Bumped when a beat's content is rewritten outside its editor (e.g. a
+  // deleted shot's mark is stripped) so the uncontrolled editor remounts.
+  const [contentRevs, setContentRevs] = useState<Record<string, number>>({});
+  const [focusShotId, setFocusShotId] = useState<string | null>(null);
+  const [rails, setRails] = useEditorPrefs();
+
+  // "all", a beat id, or null. speechSynthesis is a global singleton, so one
+  // piece of state arbitrates the whole-script and per-beat controls.
+  const [playing, setPlaying] = useState<string | null>(null);
+  const voices = useVoices();
+  const [voiceURI, setVoiceURI] = useState<string | null>(() =>
+    typeof window === "undefined" ? null : loadPreferredVoiceURI(),
+  );
+  useEffect(() => () => stopSpeech(), []);
+  const [dragging, setDragging] = useState<"left" | "right" | null>(null);
+
+  function startRailResize(e: React.PointerEvent<HTMLDivElement>, side: "left" | "right") {
+    e.preventDefault();
+    const startX = e.clientX;
+    const startW = side === "left" ? rails.leftWidth : rails.rightWidth;
+    const handle = e.currentTarget;
+    handle.setPointerCapture(e.pointerId);
+    setDragging(side);
+    const move = (ev: PointerEvent) => {
+      const delta = ev.clientX - startX;
+      const raw = side === "left" ? startW + delta : startW - delta;
+      const { min, max } = RAIL_LIMITS[side];
+      const width = Math.round(Math.min(max, Math.max(min, raw)));
+      setRails(side === "left" ? { leftWidth: width } : { rightWidth: width });
+    };
+    const up = () => {
+      setDragging(null);
+      handle.removeEventListener("pointermove", move);
+      handle.removeEventListener("pointerup", up);
+    };
+    handle.addEventListener("pointermove", move);
+    handle.addEventListener("pointerup", up);
+  }
 
   // null falls back to the first beat once data loads.
   const [selectedId, setActiveId] = useState<string | null>(null);
@@ -208,6 +253,51 @@ export default function ScriptEditorPage({ params }: { params: Promise<{ id: str
   const totalSec = timed.reduce((a, b) => a + b.sec, 0);
   const activeBeat = timed.find((b) => b.id === activeId) ?? null;
 
+  const voice = resolveVoice(voices, voiceURI);
+
+  function stopListening() {
+    stopSpeech();
+    setPlaying(null);
+  }
+
+  function listen(target: "all" | TimedBeat) {
+    const queue = target === "all" ? timed : [target];
+    const ok = speakBeats(queue, voice, {
+      onBeatStart: setActiveId,
+      onDone: () => setPlaying(null),
+    });
+    if (!ok) {
+      toast.info("Nothing to read yet");
+      return;
+    }
+    setPlaying(target === "all" ? "all" : target.id);
+  }
+
+  // Deleting a shot also strips its mark from the beat's prose. The cache is
+  // patched first so the remounted editor reads the stripped content.
+  function removeShot(beatId: string, shotId: string) {
+    const beat = timed.find((b) => b.id === beatId);
+    if (!beat) return;
+    setBroll.mutate({ id: beatId, broll: beat.broll.filter((s) => s.id !== shotId) });
+
+    const latest = (contentDrafts.current[beatId] ??
+      beats?.find((b) => b.id === beatId)?.content) as Value | null;
+    if (!latest || !hasShotMark(latest, shotId)) return;
+    clearTimeout(timers.current[beatId]);
+    delete timers.current[beatId];
+    const stripped = stripShotMark(latest, shotId);
+    const text = drafts[beatId] ?? beat.text;
+    contentDrafts.current[beatId] = stripped;
+    queryClient.setQueryData(beatsKey, (old) =>
+      old?.map((b) => (b.id === beatId ? { ...b, text, content: stripped } : b)),
+    );
+    updateText.mutate(
+      { id: beatId, text, content: stripped },
+      { onError: (e) => toast.error(e.message) },
+    );
+    setContentRevs((r) => ({ ...r, [beatId]: (r[beatId] ?? 0) + 1 }));
+  }
+
   if (!video || !beats) {
     return (
       <div className="flex h-full">
@@ -226,39 +316,16 @@ export default function ScriptEditorPage({ params }: { params: Promise<{ id: str
 
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <header className="flex h-12 shrink-0 items-center gap-4 border-b border-border px-5">
-        <Link
-          href={`/video/${videoId}`}
-          className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
-        >
-          <ArrowLeft className="size-4" /> Back
-        </Link>
-        <span className="text-sm font-medium">Script</span>
-        <span className="flex items-center gap-1.5 text-[12px] text-muted-foreground">
-          <span
-            className={cn(
-              "size-2 rounded-full",
-              pendingSaves > 0 ? "animate-pulse bg-stage-editing" : "bg-saved-dot",
-            )}
-          />
-          {pendingSaves > 0 ? "Saving…" : "Saved"}
-        </span>
-        <div className="ml-auto flex items-center gap-2">
-          <ListenButton beats={timed} onBeatStart={setActiveId} />
-          <Button variant="secondary" size="sm" className="rounded-full">
-            <Share2 className="size-3.5" /> Share
-          </Button>
-        </div>
-      </header>
-
-      <div className="flex min-h-0 flex-1">
-        <OutlineRail
+      <div className={cn("flex min-h-0 flex-1", dragging && "cursor-col-resize select-none")}>
+        <div className="flex shrink-0" style={{ width: rails.leftWidth }}>
+          <OutlineRail
           video={video}
           beats={timed}
           customKinds={customKinds}
           activeId={activeId}
           totalWords={totalWords}
           totalSec={totalSec}
+          saving={pendingSaves > 0}
           onSelect={setActiveId}
           onReorder={(orderedIds) => reorder.mutate({ videoId, orderedIds })}
           onAddBeat={(kind: BeatKind) =>
@@ -270,11 +337,29 @@ export default function ScriptEditorPage({ params }: { params: Promise<{ id: str
             })
           }
           onCustomize={() => setKindsOpen(true)}
+          />
+        </div>
+        <RailResizeHandle
+          active={dragging === "left"}
+          onPointerDown={(e) => startRailResize(e, "left")}
         />
 
         <main className="min-w-0 flex-1 overflow-y-auto">
           <div className="mx-auto max-w-[700px] px-8 pb-24 pt-10">
-            <p className="mono-label mb-2">Script</p>
+            <div className="mb-2 flex items-center justify-between">
+              <p className="mono-label">Script</p>
+              <ListenControls
+                playing={playing === "all"}
+                voices={voices}
+                voiceURI={voiceURI}
+                onVoiceChange={(uri) => {
+                  setVoiceURI(uri);
+                  savePreferredVoiceURI(uri);
+                }}
+                onListen={() => listen("all")}
+                onStop={stopListening}
+              />
+            </div>
             <h1 className="text-3xl font-bold leading-tight">{video.title}</h1>
             <p className="mt-2 font-mono text-[12px] text-muted-foreground">
               {timed.length} beats · {totalWords} words · {formatDuration(totalSec)}
@@ -283,7 +368,7 @@ export default function ScriptEditorPage({ params }: { params: Promise<{ id: str
             <div className="mt-8 flex flex-col gap-4">
               {timed.map((beat) => (
                 <BeatBlock
-                  key={`${beat.id}:${beat.activeVariantId ?? "base"}`}
+                  key={`${beat.id}:${beat.activeVariantId ?? "base"}:${contentRevs[beat.id] ?? 0}`}
                   beat={beat}
                   customKinds={customKinds}
                   active={beat.id === activeId}
@@ -294,15 +379,15 @@ export default function ScriptEditorPage({ params }: { params: Promise<{ id: str
                   onChangeLabel={(label) => updateBeat.mutate({ id: beat.id, label })}
                   onChangeKind={(kind) => updateBeat.mutate({ id: beat.id, kind })}
                   onDelete={() => deleteBeat.mutate({ id: beat.id })}
-                  onAddShot={(shotText) => {
+                  onAddShot={(shotText, shotId) => {
                     setBroll.mutate({
                       id: beat.id,
                       broll: [
                         ...beat.broll,
-                        { id: crypto.randomUUID(), text: shotText.slice(0, 140), done: false },
+                        { id: shotId, text: "", quote: shotText.slice(0, 140), done: false },
                       ],
                     });
-                    toast.success("Added to b-roll & shots");
+                    setFocusShotId(shotId);
                   }}
                   onAddVariant={() => {
                     flushDraft(beat.id);
@@ -316,25 +401,62 @@ export default function ScriptEditorPage({ params }: { params: Promise<{ id: str
                     flushDraft(beat.id);
                     deleteVariant.mutate({ id: beat.id, variantId });
                   }}
+                  playing={playing === beat.id}
+                  onToggleListen={() =>
+                    playing === beat.id ? stopListening() : listen(beat)
+                  }
                 />
               ))}
             </div>
           </div>
         </main>
 
-        <CoachPanel
-          beats={timed}
-          customKinds={customKinds}
-          activeBeat={activeBeat}
-          onSelectBeat={setActiveId}
-          onSetBroll={(beatId: string, broll: BrollItem[]) =>
-            setBroll.mutate({ id: beatId, broll })
-          }
+        <RailResizeHandle
+          active={dragging === "right"}
+          onPointerDown={(e) => startRailResize(e, "right")}
         />
+        <div className="flex shrink-0" style={{ width: rails.rightWidth }}>
+          <CoachPanel
+            beats={timed}
+            customKinds={customKinds}
+            activeBeat={activeBeat}
+            onSelectBeat={setActiveId}
+            onSetBroll={(beatId: string, broll: BrollItem[]) =>
+              setBroll.mutate({ id: beatId, broll })
+            }
+            onRemoveShot={removeShot}
+            focusShotId={focusShotId}
+            onFocusShotHandled={() => setFocusShotId(null)}
+          >
+            <ResearchRail videoId={videoId} />
+          </CoachPanel>
+        </div>
       </div>
 
-      <ResearchPanel videoId={videoId} />
       <ManageKindsDialog open={kindsOpen} onOpenChange={setKindsOpen} customKinds={customKinds} />
     </div>
+  );
+}
+
+/** Invisible 8px strip straddling a rail border; shows an accent line on
+ *  hover/drag. touch-none keeps pointer capture stable while dragging. */
+function RailResizeHandle({
+  active,
+  onPointerDown,
+}: {
+  active: boolean;
+  onPointerDown: (e: React.PointerEvent<HTMLDivElement>) => void;
+}) {
+  return (
+    <div
+      role="separator"
+      aria-orientation="vertical"
+      onPointerDown={onPointerDown}
+      className={cn(
+        "relative z-10 -mx-1 w-2 shrink-0 cursor-col-resize touch-none",
+        "after:absolute after:inset-y-0 after:left-1/2 after:w-[2px] after:-translate-x-1/2 after:rounded-full after:bg-ring after:opacity-0 after:transition-opacity after:duration-150 hover:after:opacity-60",
+        active && "after:opacity-100",
+      )}
+    />
   );
 }

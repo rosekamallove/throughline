@@ -1,6 +1,6 @@
 "use client";
 
-import { GitBranch, MoreHorizontal, Trash2 } from "lucide-react";
+import { GitBranch, MoreHorizontal, Square, Trash2, Volume2 } from "lucide-react";
 import type { Value } from "platejs";
 import { useState } from "react";
 
@@ -36,6 +36,8 @@ export function BeatBlock({
   onAddVariant,
   onSwitchVariant,
   onDeleteVariant,
+  playing,
+  onToggleListen,
 }: {
   beat: TimedBeat;
   customKinds: CustomBeatKind[];
@@ -45,10 +47,12 @@ export function BeatBlock({
   onChangeLabel: (label: string) => void;
   onChangeKind: (kind: BeatKind) => void;
   onDelete: () => void;
-  onAddShot: (text: string) => void;
+  onAddShot: (text: string, shotId: string) => void;
   onAddVariant: () => void;
   onSwitchVariant: (variantId: string) => void;
   onDeleteVariant: (variantId: string) => void;
+  playing: boolean;
+  onToggleListen: () => void;
 }) {
   const meta = resolveBeatMeta(beat.kind, customKinds);
   const [label, setLabel] = useState(beat.label);
@@ -119,6 +123,23 @@ export function BeatBlock({
         <span className="whitespace-nowrap font-mono text-[11px] text-muted-foreground">
           {beat.words}w · {formatDuration(beat.sec)}
         </span>
+        <button
+          aria-label={playing ? "Stop reading" : "Read this beat aloud"}
+          onClick={(e) => {
+            e.stopPropagation();
+            onToggleListen();
+          }}
+          className={cn(
+            "rounded p-1 text-muted-foreground transition-opacity hover:bg-accent hover:text-foreground",
+            playing ? "text-foreground opacity-100" : "opacity-0 group-hover:opacity-100",
+          )}
+        >
+          {playing ? (
+            <Square className="size-3.5 fill-current" />
+          ) : (
+            <Volume2 className="size-4" />
+          )}
+        </button>
         <DropdownMenu>
           <DropdownMenuTrigger
             aria-label="Beat options"
