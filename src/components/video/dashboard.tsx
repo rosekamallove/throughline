@@ -36,7 +36,7 @@ const FILTER_ICONS: Record<FilterKey, React.ComponentType<{ className?: string }
   all: LayoutGrid,
 };
 
-export default function DashboardPage() {
+export function Dashboard() {
   const trpc = useTRPC();
   const [filter, setFilter] = useState<FilterKey>("recent");
   const [prefs, setPrefs] = useBoardPrefs();
