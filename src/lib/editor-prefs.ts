@@ -8,6 +8,7 @@ import { useSyncExternalStore } from "react";
 interface EditorPrefs {
   leftWidth: number;
   rightWidth: number;
+  timeline: boolean;
 }
 
 export const RAIL_LIMITS = {
@@ -16,7 +17,7 @@ export const RAIL_LIMITS = {
 } as const;
 
 const STORAGE_KEY = "throughline:editorPrefs";
-const DEFAULTS: EditorPrefs = { leftWidth: 284, rightWidth: 318 };
+const DEFAULTS: EditorPrefs = { leftWidth: 284, rightWidth: 318, timeline: false };
 
 let state: EditorPrefs | null = null;
 const listeners = new Set<() => void>();
@@ -30,6 +31,7 @@ function load(): EditorPrefs {
       leftWidth: typeof parsed.leftWidth === "number" ? parsed.leftWidth : DEFAULTS.leftWidth,
       rightWidth:
         typeof parsed.rightWidth === "number" ? parsed.rightWidth : DEFAULTS.rightWidth,
+      timeline: typeof parsed.timeline === "boolean" ? parsed.timeline : DEFAULTS.timeline,
     };
   } catch {
     state = DEFAULTS;

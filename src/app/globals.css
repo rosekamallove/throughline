@@ -212,15 +212,36 @@
 }
 
 @layer components {
-  /* Words a b-roll shot was cut from — kept visible in the script so the
-     shot list and the prose stay connected. */
+  /* Words a b-roll shot was cut from. Quiet by default: a dotted underline
+     plus start/end anchor ticks; the full highlight only appears while the
+     matching row in the shot list is hovered (.shot-mark-hot). */
   .shot-mark {
     border-radius: 3px;
-    background: color-mix(in oklab, var(--thumb-accent) 24%, transparent);
-    box-shadow: inset 0 -1.5px 0 color-mix(in oklab, var(--thumb-accent) 75%, transparent);
+    box-shadow: inset 0 -1.5px 0 color-mix(in oklab, var(--thumb-accent) 55%, transparent);
     transition: background-color 150ms ease;
   }
+  .shot-mark::before,
+  .shot-mark::after {
+    content: "";
+    display: inline-block;
+    width: 3px;
+    height: 0.8em;
+    border-radius: 2px;
+    background: color-mix(in oklab, var(--thumb-accent) 85%, transparent);
+    vertical-align: -0.06em;
+  }
+  .shot-mark::before {
+    margin-right: 3px;
+  }
+  .shot-mark::after {
+    margin-left: 3px;
+  }
+  /* A mark split across leaves (formatting) only anchors its outer edges. */
+  .shot-mark + .shot-mark::before,
+  .shot-mark:has(+ .shot-mark)::after {
+    content: none;
+  }
   .shot-mark-hot {
-    background: color-mix(in oklab, var(--thumb-accent) 55%, transparent);
+    background: color-mix(in oklab, var(--thumb-accent) 32%, transparent);
   }
 }

@@ -76,6 +76,7 @@ export function CoachPanel({
               <ShotRow
                 key={shot.id}
                 shot={shot}
+                beatId={activeBeat.id}
                 autoFocus={focusShotId === shot.id}
                 onFocusHandled={onFocusShotHandled}
                 onRename={(text) =>
@@ -114,6 +115,7 @@ export function CoachPanel({
 
 function ShotRow({
   shot,
+  beatId,
   autoFocus,
   onFocusHandled,
   onRename,
@@ -121,6 +123,7 @@ function ShotRow({
   onRemove,
 }: {
   shot: BrollItem;
+  beatId: string;
   autoFocus: boolean;
   onFocusHandled?: () => void;
   onRename: (text: string) => void;
@@ -167,8 +170,11 @@ function ShotRow({
           <button
             title="Jump to these words in the script"
             onClick={() => {
-              const [first] = shotMarkEls(shot.id);
-              first?.scrollIntoView({ behavior: "smooth", block: "center" });
+              // A lost mark still jumps to the beat itself.
+              const target =
+                shotMarkEls(shot.id)[0] ??
+                document.querySelector(`[data-beat-id="${beatId}"]`);
+              target?.scrollIntoView({ behavior: "smooth", block: "center" });
             }}
             className="mt-0.5 block max-w-full truncate text-left text-[11px] italic text-muted-foreground transition-colors hover:text-foreground"
           >

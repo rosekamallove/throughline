@@ -5,17 +5,22 @@ import type { Value } from "platejs";
 import { use, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
+import { Clapperboard, Film } from "lucide-react";
+
 import { BeatBlock } from "@/components/script/beat-block";
 import { CoachPanel } from "@/components/script/coach-panel";
 import { ListenControls } from "@/components/script/listen-controls";
 import { ManageKindsDialog } from "@/components/script/manage-kinds-dialog";
 import { OutlineRail } from "@/components/script/outline-rail";
 import type { TimedBeat } from "@/components/script/pacing-bar";
+import { Prompter } from "@/components/script/prompter";
 import { ResearchRail } from "@/components/script/research-rail";
+import { Timeline } from "@/components/script/timeline";
+import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { resolveBeatMeta, type BeatKind } from "@/lib/beats";
 import { RAIL_LIMITS, useEditorPrefs } from "@/lib/editor-prefs";
-import { hasShotMark, stripShotMark } from "@/lib/plate";
+import { hasShotMark, shotMarkIds, stripShotMark } from "@/lib/plate";
 import { countWords, formatDuration, wordsToSeconds } from "@/lib/runtime";
 import {
   loadPreferredVoiceURI,
@@ -46,6 +51,7 @@ export default function ScriptEditorPage({ params }: { params: Promise<{ id: str
   const [contentRevs, setContentRevs] = useState<Record<string, number>>({});
   const [focusShotId, setFocusShotId] = useState<string | null>(null);
   const [rails, setRails] = useEditorPrefs();
+  const [prompterOpen, setPrompterOpen] = useState(false);
 
   // "all", a beat id, or null. speechSynthesis is a global singleton, so one
   // piece of state arbitrates the whole-script and per-beat controls.
@@ -298,6 +304,36 @@ export default function ScriptEditorPage({ params }: { params: Promise<{ id: str
     setContentRevs((r) => ({ ...r, [beatId]: (r[beatId] ?? 0) + 1 }));
   }
 
+  // Self-heal orphaned shot marks: a mark whose shot row is gone (a lost
+  // broll write, or a variant snapshot resurrecting deleted shots) would
+  // otherwise highlight forever with nothing in the list. Beats with a
+  // pending draft are skipped — the draft would be clobbered.
+  useEffect(() => {
+    if (!beats) return;
+    // Deferred so the reconciliation (cache patch + editor remount) happens
+    // outside the render-triggering effect body.
+    const task = setTimeout(() => {
+      for (const beat of beats) {
+        if (timers.current[beat.id] || draftsRef.current[beat.id] != null) continue;
+        const content = beat.content as Value | null;
+        if (!content) continue;
+        const known = new Set(beat.broll.map((s) => s.id));
+        const orphans = shotMarkIds(content).filter((id) => !known.has(id));
+        if (orphans.length === 0) continue;
+        const stripped = orphans.reduce((v, id) => stripShotMark(v, id), content);
+        queryClient.setQueryData(beatsKey, (old) =>
+          old?.map((b) => (b.id === beat.id ? { ...b, content: stripped } : b)),
+        );
+        mutateTextRef.current(
+          { id: beat.id, text: beat.text, content: stripped },
+          { onError: (e) => toast.error(`Cleanup failed: ${e.message}`) },
+        );
+        setContentRevs((r) => ({ ...r, [beat.id]: (r[beat.id] ?? 0) + 1 }));
+      }
+    }, 0);
+    return () => clearTimeout(task);
+  }, [beats, beatsKey, queryClient]);
+
   if (!video || !beats) {
     return (
       <div className="flex h-full">
@@ -348,25 +384,65 @@ export default function ScriptEditorPage({ params }: { params: Promise<{ id: str
           <div className="mx-auto max-w-[700px] px-8 pb-24 pt-10">
             <div className="mb-2 flex items-center justify-between">
               <p className="mono-label">Script</p>
-              <ListenControls
-                playing={playing === "all"}
-                voices={voices}
-                voiceURI={voiceURI}
-                onVoiceChange={(uri) => {
-                  setVoiceURI(uri);
-                  savePreferredVoiceURI(uri);
-                }}
-                onListen={() => listen("all")}
-                onStop={stopListening}
-              />
+              <div className="flex items-center gap-1.5">
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  aria-pressed={rails.timeline}
+                  className={cn(
+                    "rounded-full active:scale-[0.97]",
+                    rails.timeline && "bg-accent ring-1 ring-ring/30",
+                  )}
+                  onClick={() => setRails({ timeline: !rails.timeline })}
+                >
+                  <Film className="size-3.5" /> Timeline
+                </Button>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  className="rounded-full active:scale-[0.97]"
+                  onClick={() => {
+                    if (totalWords === 0) {
+                      toast.info("Nothing to read yet");
+                      return;
+                    }
+                    stopListening();
+                    setPrompterOpen(true);
+                  }}
+                >
+                  <Clapperboard className="size-3.5" /> Record
+                </Button>
+                <ListenControls
+                  playing={playing === "all"}
+                  voices={voices}
+                  voiceURI={voiceURI}
+                  onVoiceChange={(uri) => {
+                    setVoiceURI(uri);
+                    savePreferredVoiceURI(uri);
+                  }}
+                  onListen={() => listen("all")}
+                  onStop={stopListening}
+                />
+              </div>
             </div>
             <h1 className="text-3xl font-bold leading-tight">{video.title}</h1>
             <p className="mt-2 font-mono text-[12px] text-muted-foreground">
               {timed.length} beats · {totalWords} words · {formatDuration(totalSec)}
             </p>
 
+            {rails.timeline && (
+              <Timeline
+                beats={timed}
+                customKinds={customKinds}
+                activeId={activeId}
+                totalSec={totalSec}
+                onSelectBeat={setActiveId}
+              />
+            )}
+
             <div className="mt-8 flex flex-col gap-4">
               {timed.map((beat) => (
+                <div key={beat.id} data-beat-id={beat.id} className="scroll-mt-6">
                 <BeatBlock
                   key={`${beat.id}:${beat.activeVariantId ?? "base"}:${contentRevs[beat.id] ?? 0}`}
                   beat={beat}
@@ -406,6 +482,7 @@ export default function ScriptEditorPage({ params }: { params: Promise<{ id: str
                     playing === beat.id ? stopListening() : listen(beat)
                   }
                 />
+                </div>
               ))}
             </div>
           </div>
@@ -434,6 +511,16 @@ export default function ScriptEditorPage({ params }: { params: Promise<{ id: str
       </div>
 
       <ManageKindsDialog open={kindsOpen} onOpenChange={setKindsOpen} customKinds={customKinds} />
+
+      {prompterOpen && (
+        <Prompter
+          title={video.title}
+          beats={timed}
+          customKinds={customKinds}
+          totalSec={totalSec}
+          onClose={() => setPrompterOpen(false)}
+        />
+      )}
     </div>
   );
 }
