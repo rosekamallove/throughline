@@ -1,11 +1,11 @@
 /**
  * Client-side thumbnail ingestion matching YouTube's requirements:
  * 16:9, rendered at 1280×720, JPG/PNG/WebP/GIF source, ≥640px wide.
- * Cover-crops to 16:9 and compresses to a JPEG data URL (~200–400KB),
- * which is stored directly on the variant row — no blob storage needed
- * for a single-user tool. Swap for real object storage with the YT sync.
+ * Cover-crops to 16:9 and compresses to JPEG, then uploads to blob
+ * storage via /api/thumb-upload. When no blob store is configured
+ * (local dev), falls back to a data URL stored on the variant row.
  */
-export async function fileToThumbDataUrl(file: File): Promise<string> {
+async function fileToThumbCanvas(file: File): Promise<HTMLCanvasElement> {
   if (!/^image\/(jpeg|png|webp|gif)$/.test(file.type)) {
     throw new Error("Use a JPG, PNG, WebP, or GIF image");
   }
@@ -31,6 +31,27 @@ export async function fileToThumbDataUrl(file: File): Promise<string> {
   const dh = bitmap.height * scale;
   ctx.drawImage(bitmap, (W - dw) / 2, (H - dh) / 2, dw, dh);
   bitmap.close();
+  return canvas;
+}
 
-  return canvas.toDataURL("image/jpeg", 0.85);
+/** Crop + compress + upload; returns the URL to store on the variant. */
+export async function fileToThumbUrl(file: File): Promise<string> {
+  const canvas = await fileToThumbCanvas(file);
+  const jpeg = await new Promise<Blob | null>((resolve) =>
+    canvas.toBlob(resolve, "image/jpeg", 0.85),
+  );
+  if (!jpeg) throw new Error("Couldn't encode the image");
+
+  const res = await fetch("/api/thumb-upload", {
+    method: "POST",
+    body: jpeg,
+    headers: { "content-type": "image/jpeg" },
+  });
+  if (res.ok) {
+    const { url } = (await res.json()) as { url: string };
+    return url;
+  }
+  // 501 = no blob store configured (local dev) — keep the data-URL path.
+  if (res.status === 501) return canvas.toDataURL("image/jpeg", 0.85);
+  throw new Error("Upload failed, try again");
 }

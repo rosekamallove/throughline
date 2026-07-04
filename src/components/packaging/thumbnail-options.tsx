@@ -18,7 +18,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { fileToThumbDataUrl } from "@/lib/image";
+import { fileToThumbUrl } from "@/lib/image";
 import { cn } from "@/lib/utils";
 import type { PackagingVariant } from "@/trpc/types";
 
@@ -102,7 +102,7 @@ function AddThumbnailDialogContent({ onCreate }: { onCreate: (input: NewThumbnai
     if (!file) return;
     setBusy(true);
     try {
-      setPreview(await fileToThumbDataUrl(file));
+      setPreview(await fileToThumbUrl(file));
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Couldn't read that image");
     } finally {
