@@ -11,12 +11,14 @@ import {
 
 import { user } from "./auth";
 
+// Pipeline order: packaging (Title & Thumbnail) deliberately precedes
+// scripting — packaging-first is the workflow this tool is built around.
 export const videoStage = pgEnum("video_stage", [
-  "idea",
-  "scripting",
-  "recording",
-  "editing",
+  "ideation",
   "packaging",
+  "scripting",
+  "production",
+  "scheduled",
   "published",
 ]);
 
@@ -29,7 +31,7 @@ export const videos = pgTable("videos", {
     .references(() => user.id, { onDelete: "cascade" }),
   /** The selected title — packaging.select copies the winning variant here. */
   title: text("title").notNull(),
-  stage: videoStage("stage").notNull().default("idea"),
+  stage: videoStage("stage").notNull().default("ideation"),
   source: videoSource("source").notNull().default("manual"),
   youtubeVideoId: text("youtube_video_id"),
   /** CSS-thumbnail packaging: saturated bg + Anton lines ("*token*" = yellow). */

@@ -53,7 +53,7 @@ export const packagingRouter = createTRPCRouter({
           videoId: z.uuid(),
           color: z.string().max(20).nullish(),
           thumbText: thumbTextSchema.nullish(),
-          imageUrl: z.string().max(2000).nullish(),
+          imageUrl: z.string().max(2_000_000).nullish(),
           estCtr: z.number().min(0).max(100).nullish(),
         }),
       ]),
@@ -84,7 +84,7 @@ export const packagingRouter = createTRPCRouter({
         title: z.string().min(1).max(200).optional(),
         color: z.string().max(20).nullable().optional(),
         thumbText: thumbTextSchema.nullable().optional(),
-        imageUrl: z.string().max(2000).nullable().optional(),
+        imageUrl: z.string().max(2_000_000).nullable().optional(),
         estCtr: z.number().min(0).max(100).nullable().optional(),
       }),
     )

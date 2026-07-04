@@ -1,34 +1,26 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, MoreVertical, Trash2 } from "lucide-react";
+import { ArrowLeft, ChevronDown, LayoutTemplate, PenLine } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { use, useState } from "react";
 import { toast } from "sonner";
 
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+import { TemplateGalleryDialog } from "@/components/script/template-gallery";
+import { TitleOptions } from "@/components/packaging/title-options";
+import { ThumbnailOptions, type NewThumbnail } from "@/components/packaging/thumbnail-options";
+import { Checklist } from "@/components/video/checklist";
+import { PipelineStepper } from "@/components/video/pipeline-stepper";
+import { StatTile } from "@/components/video/stat-tile";
+import { ThumbnailPackaging } from "@/components/video/thumbnail-packaging";
+import { VideoCardMenu } from "@/components/video/video-card-menu";
+import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-
-import { Checklist } from "@/components/video/checklist";
-import { PipelineStepper } from "@/components/video/pipeline-stepper";
-import { StatTile } from "@/components/video/stat-tile";
-import { ThumbnailPackaging } from "@/components/video/thumbnail-packaging";
-import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatCompact, timeAgo } from "@/lib/format";
 import { countWords, formatDuration, wordsToSeconds } from "@/lib/runtime";
@@ -36,14 +28,11 @@ import { STAGE_META, type Stage } from "@/lib/stages";
 import { cn } from "@/lib/utils";
 import { useTRPC } from "@/trpc/client";
 
-const VARIANT_TAGS = ["A", "B", "C", "D", "E"];
-
 export default function VideoDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const trpc = useTRPC();
-  const router = useRouter();
   const queryClient = useQueryClient();
-  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [templatesOpen, setTemplatesOpen] = useState(false);
   const { data: video, isPending } = useQuery(trpc.video.byId.queryOptions({ id }));
 
   // Local draft while editing; null derives from the server value.
@@ -53,25 +42,27 @@ export default function VideoDetailPage({ params }: { params: Promise<{ id: stri
     void queryClient.invalidateQueries({ queryKey: trpc.video.byId.queryKey({ id }) });
     void queryClient.invalidateQueries({ queryKey: trpc.video.list.queryKey() });
   };
+  const mutationOpts = {
+    onSuccess: invalidate,
+    onError: (e: { message: string }) => toast.error(e.message),
+  };
 
-  const updateVideo = useMutation(
-    trpc.video.update.mutationOptions({
-      onSuccess: invalidate,
-      onError: (e) => toast.error(e.message),
-    }),
-  );
-  const setStage = useMutation(
-    trpc.video.setStage.mutationOptions({
-      onSuccess: invalidate,
-      onError: (e) => toast.error(e.message),
-    }),
-  );
-  const deleteVideo = useMutation(
-    trpc.video.delete.mutationOptions({
+  const updateVideo = useMutation(trpc.video.update.mutationOptions(mutationOpts));
+  const setStage = useMutation(trpc.video.setStage.mutationOptions(mutationOpts));
+  const selectVariant = useMutation(trpc.packaging.select.mutationOptions(mutationOpts));
+  const createVariant = useMutation(trpc.packaging.create.mutationOptions(mutationOpts));
+  const deleteVariant = useMutation(trpc.packaging.delete.mutationOptions(mutationOpts));
+  const addItem = useMutation(trpc.checklist.add.mutationOptions(mutationOpts));
+  const renameItem = useMutation(trpc.checklist.rename.mutationOptions(mutationOpts));
+  const removeItem = useMutation(trpc.checklist.remove.mutationOptions(mutationOpts));
+  const applyTemplate = useMutation(
+    trpc.beat.applyTemplate.mutationOptions({
       onSuccess: () => {
-        void queryClient.invalidateQueries({ queryKey: trpc.video.list.queryKey() });
-        toast.success("Video deleted");
-        router.push("/");
+        invalidate();
+        void queryClient.invalidateQueries({
+          queryKey: trpc.beat.listByVideo.queryKey({ videoId: id }),
+        });
+        toast.success("Template applied");
       },
       onError: (e) => toast.error(e.message),
     }),
@@ -104,7 +95,7 @@ export default function VideoDetailPage({ params }: { params: Promise<{ id: stri
 
   if (isPending || !video) {
     return (
-      <div className="mx-auto max-w-[940px] p-6">
+      <div className="mx-auto max-w-[980px] p-6">
         <Skeleton className="h-8 w-40" />
         <div className="mt-6 grid grid-cols-[400px_1fr] gap-8">
           <Skeleton className="aspect-video rounded-thumb" />
@@ -119,13 +110,13 @@ export default function VideoDetailPage({ params }: { params: Promise<{ id: stri
 
   const stage = STAGE_META[video.stage];
   const thumbnailVariants = video.variants.filter((v) => v.kind === "thumbnail");
+  const titleVariants = video.variants.filter((v) => v.kind === "title");
   const totalWords = video.beats.reduce((a, b) => a + countWords(b.text), 0);
   const totalSec = video.beats.reduce((a, b) => a + wordsToSeconds(countWords(b.text)), 0);
-  const estCtr =
-    thumbnailVariants.find((v) => v.isSelected)?.estCtr ?? video.ctr ?? null;
+  const estCtr = thumbnailVariants.find((v) => v.isSelected)?.estCtr ?? video.ctr ?? null;
+  const scriptHasContent = video.beats.some((b) => b.text.trim().length > 0);
 
   const displayTitle = title ?? video.title;
-
   const commitTitle = () => {
     if (title !== null && title.trim() && title !== video.title) {
       updateVideo.mutate({ id, title: title.trim() });
@@ -133,8 +124,16 @@ export default function VideoDetailPage({ params }: { params: Promise<{ id: stri
     setTitle(null);
   };
 
+  const onCreateThumbnail = (input: NewThumbnail) => {
+    createVariant.mutate(
+      "imageUrl" in input
+        ? { kind: "thumbnail", videoId: id, imageUrl: input.imageUrl }
+        : { kind: "thumbnail", videoId: id, color: input.color, thumbText: input.lines },
+    );
+  };
+
   return (
-    <div className="mx-auto w-full max-w-[940px] px-6 pb-16 pt-4">
+    <div className="mx-auto w-full max-w-[980px] px-6 pb-16 pt-4">
       <div className="mb-6 flex items-center justify-between">
         <Link
           href="/"
@@ -142,40 +141,12 @@ export default function VideoDetailPage({ params }: { params: Promise<{ id: stri
         >
           <ArrowLeft className="size-4" /> Back to channel
         </Link>
-        <DropdownMenu>
-          <DropdownMenuTrigger
-            aria-label="Video options"
-            className="rounded-full p-1.5 text-muted-foreground hover:bg-accent hover:text-foreground"
-          >
-            <MoreVertical className="size-4" />
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem variant="destructive" onClick={() => setConfirmDelete(true)}>
-              <Trash2 className="size-4" /> Delete video
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-        <AlertDialog open={confirmDelete} onOpenChange={setConfirmDelete}>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Delete this video?</AlertDialogTitle>
-              <AlertDialogDescription>
-                The script, packaging options, and checklist go with it. This can’t be undone.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Cancel</AlertDialogCancel>
-              <AlertDialogAction onClick={() => deleteVideo.mutate({ id })}>
-                Delete
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
+        <VideoCardMenu video={video} />
       </div>
 
       <div className="grid gap-8 md:grid-cols-[400px_minmax(0,1fr)]">
-        {/* Left: hero + variants */}
-        <div className="flex flex-col gap-5">
+        {/* Left: hero + packaging (thumbnails + titles live here now) */}
+        <div className="flex flex-col gap-6">
           <div className="relative">
             <ThumbnailPackaging
               color={video.packagingColor}
@@ -189,36 +160,32 @@ export default function VideoDetailPage({ params }: { params: Promise<{ id: stri
                 stage.badge,
               )}
             >
-              {stage.label}
+              {stage.shortLabel}
             </span>
           </div>
 
-          {thumbnailVariants.length > 0 && (
-            <div>
-              <p className="mono-label mb-2">Thumbnail variants</p>
-              <div className="grid grid-cols-3 gap-3">
-                {thumbnailVariants.map((v, i) => (
-                  <div key={v.id} className="flex flex-col gap-1.5">
-                    <ThumbnailPackaging
-                      color={v.color}
-                      lines={v.thumbText}
-                      imageUrl={v.imageUrl}
-                      className={cn(
-                        v.isSelected && "ring-2 ring-primary ring-offset-2 ring-offset-background",
-                      )}
-                    />
-                    <span className="font-mono text-[11px] text-muted-foreground">
-                      {VARIANT_TAGS[i]}
-                      {v.estCtr != null && ` · ${v.estCtr}% CTR`}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
+          <section>
+            <p className="mono-label mb-2">Thumbnails</p>
+            <ThumbnailOptions
+              variants={thumbnailVariants}
+              onSelect={(variantId) => selectVariant.mutate({ variantId })}
+              onDelete={(variantId) => deleteVariant.mutate({ id: variantId })}
+              onCreate={onCreateThumbnail}
+            />
+          </section>
+
+          <section>
+            <p className="mono-label mb-2">Titles</p>
+            <TitleOptions
+              variants={titleVariants}
+              onSelect={(variantId) => selectVariant.mutate({ variantId })}
+              onDelete={(variantId) => deleteVariant.mutate({ id: variantId })}
+              onCreate={(t) => createVariant.mutate({ kind: "title", videoId: id, title: t })}
+            />
+          </section>
         </div>
 
-        {/* Right: title, stepper, actions, checklist, stats */}
+        {/* Right: title, stepper, script, checklist, stats */}
         <div className="flex flex-col gap-6">
           <div>
             <input
@@ -226,9 +193,9 @@ export default function VideoDetailPage({ params }: { params: Promise<{ id: stri
               onChange={(e) => setTitle(e.target.value)}
               onBlur={commitTitle}
               onKeyDown={(e) => e.key === "Enter" && e.currentTarget.blur()}
-              className="w-full rounded-lg border border-transparent bg-transparent px-2 py-1 -mx-2 text-2xl font-bold outline-none transition-colors hover:border-border focus:border-ring"
+              className="-mx-2 w-full rounded-lg border border-transparent bg-transparent px-2 py-1 text-2xl font-bold outline-none transition-colors hover:border-border focus:border-ring"
             />
-            <p className="mt-1 px-0 text-sm text-muted-foreground">
+            <p className="mt-1 text-sm text-muted-foreground">
               {video.stage === "published" && video.views != null
                 ? `${formatCompact(video.views)} views · ${timeAgo(video.publishedAt ?? video.createdAt)}`
                 : `${stage.label}${video.nextAction ? ` · next: ${video.nextAction}` : ""}`}
@@ -240,13 +207,27 @@ export default function VideoDetailPage({ params }: { params: Promise<{ id: stri
             onSelect={(s: Stage) => setStage.mutate({ id, stage: s })}
           />
 
-          <div className="flex gap-3">
-            <Button asChild>
-              <Link href={`/video/${id}/script`}>Open script</Link>
+          <div className="flex">
+            <Button asChild className="rounded-r-none">
+              <Link href={`/video/${id}/script`}>
+                <PenLine className="size-4" /> Open script
+              </Link>
             </Button>
-            <Button asChild variant="outline">
-              <Link href={`/video/${id}/packaging`}>Edit packaging</Link>
-            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  aria-label="Script options"
+                  className="rounded-l-none border-l border-primary-foreground/20 px-2"
+                >
+                  <ChevronDown className="size-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start">
+                <DropdownMenuItem onClick={() => setTemplatesOpen(true)}>
+                  <LayoutTemplate className="size-4" /> Start from a template…
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
 
           <div>
@@ -254,19 +235,33 @@ export default function VideoDetailPage({ params }: { params: Promise<{ id: stri
             <Checklist
               items={video.checklist}
               onToggle={(itemId, done) => toggleItem.mutate({ id: itemId, done })}
+              onAdd={(label) => addItem.mutate({ videoId: id, label })}
+              onRename={(itemId, label) => renameItem.mutate({ id: itemId, label })}
+              onRemove={(itemId) => removeItem.mutate({ id: itemId })}
             />
           </div>
 
           <div className="flex gap-3">
             <StatTile
               label="Runtime"
-              value={video.durationSec != null ? formatDuration(video.durationSec) : formatDuration(totalSec)}
+              value={
+                video.durationSec != null
+                  ? formatDuration(video.durationSec)
+                  : formatDuration(totalSec)
+              }
             />
             <StatTile label="Words" value={String(totalWords)} />
             <StatTile label="Est. CTR" value={estCtr != null ? `${estCtr}%` : "—"} />
           </div>
         </div>
       </div>
+
+      <TemplateGalleryDialog
+        open={templatesOpen}
+        onOpenChange={setTemplatesOpen}
+        scriptHasContent={scriptHasContent}
+        onApply={(templateId) => applyTemplate.mutate({ videoId: id, templateId })}
+      />
     </div>
   );
 }

@@ -3,6 +3,7 @@ import { and, asc, eq } from "drizzle-orm";
 import { z } from "zod";
 
 import { BEAT_KINDS } from "@/lib/beats";
+import { SCRIPT_TEMPLATES } from "@/lib/templates";
 import { brollItemSchema } from "@/lib/types";
 import { beats, videos } from "@/server/db/schema";
 
@@ -155,6 +156,32 @@ export const beatRouter = createTRPCRouter({
           await tx.update(beats).set({ position: index }).where(eq(beats.id, id));
         }
         return { ok: true };
+      });
+    }),
+
+  /** Replace the video's beats with a template's structure. Destructive —
+   *  the client confirms first when the current script has content. */
+  applyTemplate: protectedProcedure
+    .input(z.object({ videoId: z.uuid(), templateId: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      await assertVideoOwned(ctx, input.videoId);
+      const template = SCRIPT_TEMPLATES.find((t) => t.id === input.templateId);
+      if (!template) throw new TRPCError({ code: "NOT_FOUND", message: "Unknown template" });
+      return ctx.db.transaction(async (tx) => {
+        await tx.delete(beats).where(eq(beats.videoId, input.videoId));
+        const created = await tx
+          .insert(beats)
+          .values(
+            template.beats.map((b, i) => ({
+              videoId: input.videoId,
+              kind: b.kind,
+              label: b.label,
+              guide: b.guide ?? null,
+              position: i,
+            })),
+          )
+          .returning();
+        return created;
       });
     }),
 

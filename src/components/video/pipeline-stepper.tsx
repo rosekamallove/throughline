@@ -58,7 +58,7 @@ export function PipelineStepper({
                 done || active ? "text-foreground" : "text-muted-foreground",
               )}
             >
-              {STAGE_META[s].label}
+              {STAGE_META[s].shortLabel}
             </span>
           </div>
         );

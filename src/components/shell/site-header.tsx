@@ -13,7 +13,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
-import { Separator } from "@/components/ui/separator";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { signOut } from "@/lib/auth-client";
 
@@ -27,13 +26,12 @@ export function SiteHeader({ userInitial = "R" }: { userInitial?: string }) {
   }
 
   return (
-    <header className="flex h-14 shrink-0 items-center gap-2 border-b px-4">
-      <SidebarTrigger className="-ml-1" />
-      <Separator orientation="vertical" className="mr-1 !h-4" />
+    <header className="flex h-14 shrink-0 items-center gap-3 border-b px-4">
+      <SidebarTrigger className="-ml-1 text-muted-foreground hover:text-foreground" />
 
       <div className="relative hidden w-full max-w-sm md:block">
         <Search className="absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-        <Input placeholder="Search your videos" className="h-9 pl-8" />
+        <Input placeholder="Search your videos" className="h-9 rounded-full pl-8" />
       </div>
 
       <div className="ml-auto flex items-center gap-2">

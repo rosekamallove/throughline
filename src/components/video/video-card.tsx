@@ -3,6 +3,7 @@
 import Link from "next/link";
 
 import { ThumbnailPackaging } from "@/components/video/thumbnail-packaging";
+import { VideoCardMenu } from "@/components/video/video-card-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { formatCompact, timeAgo } from "@/lib/format";
 import { formatDuration } from "@/lib/runtime";
@@ -14,7 +15,7 @@ function metaLine(video: Video): string {
   if (video.stage === "published" && video.views != null) {
     return `${formatCompact(video.views)} views · ${timeAgo(video.publishedAt ?? video.createdAt)}`;
   }
-  if (video.stage === "idea") {
+  if (video.stage === "ideation") {
     return timeAgo(video.createdAt);
   }
   return video.nextAction ? `next: ${video.nextAction}` : timeAgo(video.createdAt);
@@ -33,7 +34,7 @@ export function VideoCard({
   channelName?: string;
 }) {
   const stage = STAGE_META[video.stage];
-  const inProduction = video.stage !== "published" && video.stage !== "idea";
+  const inProduction = video.stage !== "published" && video.stage !== "ideation";
 
   const card = (
     <article className="group">
@@ -73,15 +74,21 @@ export function VideoCard({
           </div>
         </div>
       ) : (
-        <div className="mt-3 min-w-0">
-          <p className="mono-label flex items-center gap-1.5">
-            <span className={cn("size-2 rounded-full", stage.dot)} />
-            {stage.label}
-          </p>
-          <h3 className="mt-1 line-clamp-2 text-sm font-medium leading-5 group-hover:underline">
-            {video.title}
-          </h3>
-          <p className="mt-0.5 truncate text-[13px] text-muted-foreground">{metaLine(video)}</p>
+        <div className="mt-3 flex min-w-0 items-start gap-1">
+          <div className="min-w-0 flex-1">
+            <p className="mono-label flex items-center gap-1.5">
+              <span className={cn("size-2 rounded-full", stage.dot)} />
+              {stage.label}
+            </p>
+            <h3 className="mt-1 line-clamp-2 text-sm font-medium leading-5 group-hover:underline">
+              {video.title}
+            </h3>
+            <p className="mt-0.5 truncate text-[13px] text-muted-foreground">{metaLine(video)}</p>
+          </div>
+          <VideoCardMenu
+            video={video}
+            className="opacity-0 transition-opacity group-hover:opacity-100 data-[state=open]:opacity-100"
+          />
         </div>
       )}
     </article>
