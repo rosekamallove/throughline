@@ -1,6 +1,7 @@
 "use client";
 
-import { Search } from "lucide-react";
+import { Search, SquarePlay } from "lucide-react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
 
@@ -17,7 +18,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
-import { SidebarTrigger } from "@/components/ui/sidebar";
 import { signOut } from "@/lib/auth-client";
 
 export function SiteHeader({ userInitial = "R" }: { userInitial?: string }) {
@@ -31,8 +31,10 @@ export function SiteHeader({ userInitial = "R" }: { userInitial?: string }) {
   }
 
   return (
-    <header className="flex h-14 shrink-0 items-center gap-3 border-b px-4">
-      <SidebarTrigger className="-ml-1 text-muted-foreground hover:text-foreground" />
+    <header className="flex h-14 shrink-0 items-center gap-4 border-b px-5">
+      <Link href="/" className="text-base font-semibold tracking-tight">
+        Throughline
+      </Link>
 
       <div className="relative hidden w-full max-w-sm md:block">
         <Search className="absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
@@ -51,7 +53,13 @@ export function SiteHeader({ userInitial = "R" }: { userInitial?: string }) {
               </Avatar>
             </button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-40">
+          <DropdownMenuContent align="end" className="w-44">
+            <DropdownMenuItem asChild>
+              <Link href="/connect">
+                <SquarePlay className="size-4" /> Connect YouTube
+              </Link>
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
             <DropdownMenuLabel className="mono-label">Theme</DropdownMenuLabel>
             <DropdownMenuRadioGroup value={theme} onValueChange={setTheme}>
               <DropdownMenuRadioItem value="system">System</DropdownMenuRadioItem>

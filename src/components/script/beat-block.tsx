@@ -77,10 +77,7 @@ export function BeatBlock({
     <section
       onFocusCapture={onActivate}
       onClick={onActivate}
-      className={cn(
-        "group rounded-r-xl border-l-[3px] py-3 pl-5 pr-3 transition-colors",
-        active && "bg-muted",
-      )}
+      className="group rounded-r-xl border-l-[3px] py-3 pl-5 pr-3 transition-colors"
       style={{ borderLeftColor: active ? meta.color : "transparent" }}
     >
       <div className="mb-1.5 flex items-center gap-2.5">

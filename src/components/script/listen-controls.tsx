@@ -33,11 +33,11 @@ export function ListenControls({
   const effective = resolveVoice(voices, voiceURI)?.voiceURI ?? "";
 
   return (
-    <div className="flex items-center">
+    <div className="flex items-center overflow-hidden rounded-full bg-secondary">
       <Button
-        variant="secondary"
+        variant="ghost"
         size="sm"
-        className="rounded-l-full rounded-r-none active:scale-[0.97]"
+        className="rounded-none pl-3 pr-2.5 hover:bg-accent active:scale-[0.97]"
         onClick={playing ? onStop : onListen}
       >
         {playing ? (
@@ -50,15 +50,16 @@ export function ListenControls({
           </>
         )}
       </Button>
+      <span aria-hidden className="h-4 w-px bg-border" />
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button
-            variant="secondary"
+            variant="ghost"
             size="sm"
             aria-label="Choose voice"
-            className="rounded-l-none rounded-r-full border-l border-border/60 px-1.5"
+            className="rounded-none px-2 hover:bg-accent"
           >
-            <ChevronDown className="size-3.5" />
+            <ChevronDown className="size-3.5 text-muted-foreground" />
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="max-h-72 overflow-y-auto">
