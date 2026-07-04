@@ -169,7 +169,6 @@ const PACING = [
   { color: BEAT.conclusion, w: "7%" },
 ] as const;
 
-const HERO_THUMB = { color: "#0C8599", lines: ["I WOKE UP", "AT *5AM*", "30 DAYS"] } as const;
 
 function EditorMock() {
   return (
@@ -183,16 +182,13 @@ function EditorMock() {
               <span className="size-1.5 rounded-full bg-saved-dot" /> Saved
             </span>
           </div>
-          <div
-            className="mt-4 flex aspect-video items-center justify-center rounded-lg px-2"
-            style={{ background: HERO_THUMB.color }}
-          >
-            <span className="font-anton text-center text-[15px] leading-[1.08] tracking-wide text-white [text-shadow:0_1px_2px_rgb(0_0_0/0.25)]">
-              {HERO_THUMB.lines.map((line) => (
-                <ThumbLine key={line} line={line} />
-              ))}
-            </span>
-          </div>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={YT_THUMB("4fsgqnat758", "mq")}
+            alt="I woke up at 5am for 30 days"
+            loading="lazy"
+            className="mt-4 aspect-video w-full rounded-lg object-cover"
+          />
           <div className="mt-3 flex gap-2">
             <MiniStat value="8:12" label="runtime" />
             <MiniStat value="1,132" label="words" />
@@ -229,7 +225,7 @@ function EditorMock() {
             </span>
           </div>
           <h2 className="mt-2 text-2xl font-bold tracking-tight sm:text-3xl">
-            I woke up at 5AM for 30 days
+            I woke up at 5am for 30 days
           </h2>
           <p className="mt-1.5 font-mono text-[10px] text-muted-foreground">
             8 beats · 1,132 words · 8:12
@@ -373,69 +369,49 @@ function MiniShotRow({ text, done = false }: { text: string; done?: boolean }) {
 /* ------------------------------------------------------------------ */
 /* bento mocks                                                         */
 
+/* Real thumbnails from real videos, served by YouTube's CDN. */
+const YT_THUMB = (id: string, res: "mq" | "maxres" = "maxres") =>
+  `https://i.ytimg.com/vi/${id}/${res}default.jpg`;
+
 const FEED = [
   {
-    color: "#0C8599",
-    lines: ["I WOKE UP", "AT *5AM*", "30 DAYS"],
-    title: "I woke up at 5AM for 30 days",
+    id: "4fsgqnat758",
+    title: "I woke up at 5am for 30 days",
     meta: "In Production · finish the rough cut",
     stage: "var(--stage-production)",
   },
   {
-    color: "#2F9E44",
-    lines: ["I SPENT", "*$5,000*", "ON ADS"],
-    title: "I spent $5,000 on Google Ads",
+    id: "Py_tOOG99Hw",
+    title: "I crossed America with $0.01",
     meta: "Scripting · finish the script",
     stage: "var(--stage-scripting)",
   },
   {
-    color: "#3B5BDB",
-    lines: ["RANK *#1*", "IN CHATGPT"],
-    title: "How to rank in ChatGPT in 7 Days",
+    id: "vRHiacRNitY",
+    title: "How to Show Up in ChatGPT in 2026",
     meta: "142K views · 3 weeks ago",
     stage: "var(--stage-published)",
   },
   {
-    color: "#E8590C",
-    lines: ["YOUR NEXT", "*$1M* APP", "IN 2 MIN"],
-    title: "Find your next app idea in 2 minutes",
+    id: "OmS6UcxM8rQ",
+    title: "How To Find MILLION DOLLAR Business Ideas That WORK",
     meta: "89K views · 1 month ago",
     stage: "var(--stage-published)",
   },
 ] as const;
-
-function ThumbLine({ line }: { line: string }) {
-  const parts = line.split(/\*(.+?)\*/);
-  return (
-    <span className="block">
-      {parts.map((part, i) =>
-        i % 2 === 1 ? (
-          <span key={i} style={{ color: "var(--thumb-accent)" }}>
-            {part}
-          </span>
-        ) : (
-          part
-        ),
-      )}
-    </span>
-  );
-}
 
 function FeedMock() {
   return (
     <div className="grid flex-1 grid-cols-2 gap-x-5 gap-y-6 px-6 pb-6">
       {FEED.map((v) => (
         <div key={v.title} className="min-w-0">
-          <div
-            className="flex aspect-video items-center justify-center rounded-xl px-3"
-            style={{ background: v.color }}
-          >
-            <span className="font-anton text-center text-[clamp(14px,2.2vw,22px)] leading-[1.08] tracking-wide text-white [text-shadow:0_1px_2px_rgb(0_0_0/0.25)]">
-              {v.lines.map((line) => (
-                <ThumbLine key={line} line={line} />
-              ))}
-            </span>
-          </div>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={YT_THUMB(v.id)}
+            alt={v.title}
+            loading="lazy"
+            className="aspect-video w-full rounded-xl object-cover"
+          />
           <p className="mt-2 flex items-center gap-1.5 font-mono text-[9px] font-semibold uppercase tracking-[1.5px] text-muted-foreground">
             <span className="size-1.5 rounded-full" style={{ background: v.stage }} />
             {v.meta.split(" · ")[0]}
@@ -484,13 +460,22 @@ function ResearchMock() {
       </div>
       <p className="mono-label mt-1.5">References · 1</p>
       <div className="overflow-hidden rounded-lg border bg-background">
-        <div className="flex aspect-video items-center justify-center bg-foreground/80">
-          <span className="flex size-8 items-center justify-center rounded-full bg-black/70">
-            <Play className="size-3.5 fill-white text-white" />
+        <div className="relative">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={YT_THUMB("q0aFOxT6TNw", "mq")}
+            alt="iPhone 17 Pro Review"
+            loading="lazy"
+            className="aspect-video w-full object-cover"
+          />
+          <span className="absolute inset-0 flex items-center justify-center">
+            <span className="flex size-8 items-center justify-center rounded-full bg-black/70">
+              <Play className="size-3.5 fill-white text-white" />
+            </span>
           </span>
         </div>
         <p className="truncate px-3 py-1.5 text-[11px] text-muted-foreground">
-          youtube.com/watch?v=dQw4…
+          youtube.com/watch?v=q0aFO…
         </p>
       </div>
     </div>
@@ -507,20 +492,20 @@ const BOARD_COLS = [
   {
     label: "Scripting",
     dot: "var(--stage-scripting)",
-    cards: ["I spent $5,000 on Google Ads"],
-    thumb: "#2F9E44",
+    cards: ["I crossed America with $0.01"],
+    thumb: "Py_tOOG99Hw",
   },
   {
     label: "Production",
     dot: "var(--stage-production)",
-    cards: ["I woke up at 5AM for 30 days"],
-    thumb: "#0C8599",
+    cards: ["I woke up at 5am for 30 days"],
+    thumb: "4fsgqnat758",
   },
   {
     label: "Published",
     dot: "var(--stage-published)",
-    cards: ["How to rank in ChatGPT in 7 Days"],
-    thumb: "#3B5BDB",
+    cards: ["How to Show Up in ChatGPT in 2026"],
+    thumb: "vRHiacRNitY",
   },
 ] as const;
 
@@ -545,7 +530,13 @@ function BoardMock() {
           {col.cards.map((card) => (
             <div key={card} className="rounded-lg border bg-card p-1.5 shadow-xs">
               {"thumb" in col && (
-                <div className="mb-1.5 aspect-video rounded-md" style={{ background: col.thumb }} />
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={YT_THUMB(col.thumb, "mq")}
+                  alt={card}
+                  loading="lazy"
+                  className="mb-1.5 aspect-video w-full rounded-md object-cover"
+                />
               )}
               <p className="line-clamp-2 text-[10px] font-medium leading-snug">{card}</p>
             </div>
