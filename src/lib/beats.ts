@@ -91,11 +91,3 @@ export const KIND_COLOR_CHOICES = [
   "#9AA4B2",
   "#E5484D",
 ];
-
-export const DEFAULT_BEAT_SKELETON: { kind: BuiltinBeatKind; label: string }[] = [
-  { kind: "hook", label: "Hook" },
-  { kind: "body", label: "Context & Authority" },
-  { kind: "rehook", label: "Re-hook" },
-  { kind: "body", label: "Section 1" },
-  { kind: "conclusion", label: "Conclusion" },
-];

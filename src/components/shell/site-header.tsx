@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
 
+import { Logo } from "@/components/logo";
 import { CreateVideoInline } from "@/components/video/create-video-inline";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
@@ -32,8 +33,8 @@ export function SiteHeader({ userInitial = "R" }: { userInitial?: string }) {
 
   return (
     <header className="flex h-14 shrink-0 items-center gap-4 border-b px-5">
-      <Link href="/" className="text-base font-semibold tracking-tight">
-        Throughline
+      <Link href="/" aria-label="Home">
+        <Logo className="text-[19px]" />
       </Link>
 
       <div className="relative hidden w-full max-w-sm md:block">

@@ -153,6 +153,7 @@
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
   --font-anton: var(--font-anton);
+  --font-logo: var(--font-roboto-condensed);
   --font-heading: var(--font-geist-sans);
 
   --radius-sm: calc(var(--radius) * 0.6);

@@ -90,12 +90,3 @@ export const FILTERS = [
 
 export type FilterKey = (typeof FILTERS)[number]["key"];
 
-/** Instantiated per video on creation (and by the seed). */
-export const DEFAULT_CHECKLIST = [
-  "Script locked",
-  "Recorded",
-  "Edit v1 done",
-  "Thumbnail A/B picked",
-  "Title finalized",
-  "Scheduled",
-] as const;

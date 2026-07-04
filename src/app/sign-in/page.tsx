@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
-import { LogoMark } from "@/components/logo";
+import { Logo } from "@/components/logo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -33,9 +33,8 @@ export default function SignInPage() {
   return (
     <main className="flex min-h-dvh items-center justify-center p-6">
       <div className="w-full max-w-sm rounded-2xl border border-border bg-card p-8">
-        <div className="mb-6 flex items-center gap-2">
-          <LogoMark className="size-9" />
-          <span className="text-xl font-bold tracking-tight">Throughline</span>
+        <div className="mb-6">
+          <Logo className="text-[23px]" />
         </div>
 
         <form onSubmit={onSubmit} className="flex flex-col gap-4">

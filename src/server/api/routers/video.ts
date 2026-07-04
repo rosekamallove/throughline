@@ -2,10 +2,9 @@ import { TRPCError } from "@trpc/server";
 import { and, eq } from "drizzle-orm";
 import { z } from "zod";
 
-import { DEFAULT_BEAT_SKELETON } from "@/lib/beats";
-import { STAGES, DEFAULT_CHECKLIST, stageIndex } from "@/lib/stages";
+import { STAGES, stageIndex } from "@/lib/stages";
 import { thumbTextSchema } from "@/lib/types";
-import { beats, checklistItems, videos } from "@/server/db/schema";
+import { videos } from "@/server/db/schema";
 
 import { createTRPCRouter, protectedProcedure } from "../trpc";
 
@@ -43,24 +42,12 @@ export const videoRouter = createTRPCRouter({
   create: protectedProcedure
     .input(z.object({ title: z.string().min(1).max(200) }))
     .mutation(async ({ ctx, input }) => {
-      return ctx.db.transaction(async (tx) => {
-        const [video] = await tx
-          .insert(videos)
-          .values({ userId: ctx.session.user.id, title: input.title })
-          .returning();
-        await tx.insert(checklistItems).values(
-          DEFAULT_CHECKLIST.map((label, i) => ({ videoId: video.id, label, position: i })),
-        );
-        await tx.insert(beats).values(
-          DEFAULT_BEAT_SKELETON.map((b, i) => ({
-            videoId: video.id,
-            kind: b.kind,
-            label: b.label,
-            position: i,
-          })),
-        );
-        return video;
-      });
+      // No default checklist or beat skeleton — new videos start empty.
+      const [video] = await ctx.db
+        .insert(videos)
+        .values({ userId: ctx.session.user.id, title: input.title })
+        .returning();
+      return video;
     }),
 
   update: protectedProcedure

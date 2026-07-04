@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Anton, Geist, Geist_Mono } from "next/font/google";
+import { Anton, Geist, Geist_Mono, Roboto_Condensed } from "next/font/google";
 import "./globals.css";
 
 import { ThemeProvider } from "@/components/shell/theme-provider";
@@ -16,6 +16,14 @@ const geistSans = Geist({
 const geistMono = Geist_Mono({
   subsets: ["latin"],
   variable: "--font-geist-mono",
+  display: "swap",
+});
+
+// Logo wordmark only — the closest Google font to YouTube Sans.
+const robotoCondensed = Roboto_Condensed({
+  subsets: ["latin"],
+  weight: "700",
+  variable: "--font-roboto-condensed",
   display: "swap",
 });
 
@@ -46,6 +54,7 @@ export default function RootLayout({
         geistSans.variable,
         geistMono.variable,
         anton.variable,
+        robotoCondensed.variable,
       )}
     >
       <body className="flex min-h-full flex-col font-sans">

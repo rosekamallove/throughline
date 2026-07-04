@@ -1,7 +1,7 @@
 import { ChevronDown, Check, FileText, Play, Plus, Volume2 } from "lucide-react";
 import Link from "next/link";
 
-import { LogoMark } from "@/components/logo";
+import { Logo } from "@/components/logo";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -12,10 +12,7 @@ export function Landing() {
     <div className="min-h-dvh bg-background text-foreground">
       <section className="relative">
         <nav className="mx-auto flex h-16 max-w-6xl items-center justify-between px-6">
-          <span className="flex items-center gap-2.5">
-            <LogoMark className="size-8" />
-            <span className="text-base font-semibold tracking-tight">Throughline</span>
-          </span>
+          <Logo className="text-[22px]" />
           <Button asChild variant="secondary" size="sm" className="rounded-full">
             <Link href="/sign-in">Sign in</Link>
           </Button>
@@ -39,7 +36,7 @@ export function Landing() {
           </div>
         </div>
 
-        <div className="mx-auto mt-14 max-w-5xl px-6 delay-200 duration-700 animate-in fade-in slide-in-from-bottom-4">
+        <div className="mx-auto mt-14 max-w-6xl px-6 delay-200 duration-700 animate-in fade-in slide-in-from-bottom-4">
           <EditorMock />
         </div>
       </section>
@@ -151,28 +148,33 @@ function TileText({ title, body }: { title: string; body: string }) {
 /* hero: three-pane editor                                             */
 
 const OUTLINE = [
-  { color: BEAT.hook, label: "Hook", time: "0:12" },
-  { color: BEAT.body, label: "Context & Authority", time: "0:31" },
-  { color: BEAT.rehook, label: "Re-hook", time: "0:07" },
-  { color: BEAT.body, label: "Section 1 · Get the vibe", time: "0:24" },
-  { color: BEAT.body, label: "Section 2 · Rank the subs", time: "0:22" },
-  { color: BEAT.conclusion, label: "Conclusion", time: "0:10" },
+  { color: BEAT.hook, label: "Hook", time: "0:13" },
+  { color: BEAT.body, label: "Context · Night owl", time: "0:38" },
+  { color: BEAT.rehook, label: "Re-hook", time: "0:09" },
+  { color: BEAT.body, label: "Week 1 · The pain", time: "1:42" },
+  { color: BEAT.body, label: "Week 2 · The crash", time: "1:36" },
+  { color: BEAT.body, label: "Week 3 · The turn", time: "1:48" },
+  { color: BEAT.body, label: "Week 4 · Autopilot", time: "1:24" },
+  { color: BEAT.conclusion, label: "Conclusion · Verdict", time: "0:42" },
 ] as const;
 
 const PACING = [
-  { color: BEAT.hook, w: "9%" },
-  { color: BEAT.body, w: "24%" },
-  { color: BEAT.rehook, w: "6%" },
-  { color: BEAT.body, w: "19%" },
+  { color: BEAT.hook, w: "3%" },
+  { color: BEAT.body, w: "8%" },
+  { color: BEAT.rehook, w: "2%" },
+  { color: BEAT.body, w: "21%" },
+  { color: BEAT.body, w: "20%" },
+  { color: BEAT.body, w: "22%" },
   { color: BEAT.body, w: "17%" },
-  { color: BEAT.body, w: "17%" },
-  { color: BEAT.conclusion, w: "8%" },
+  { color: BEAT.conclusion, w: "7%" },
 ] as const;
+
+const HERO_THUMB = { color: "#0C8599", lines: ["I WOKE UP", "AT *5AM*", "30 DAYS"] } as const;
 
 function EditorMock() {
   return (
     <div className="overflow-hidden rounded-2xl border bg-card text-left shadow-2xl shadow-foreground/10">
-      <div className="grid md:grid-cols-[210px_minmax(0,1fr)_230px]">
+      <div className="grid md:grid-cols-[236px_minmax(0,1fr)_252px]">
         {/* outline rail */}
         <aside className="hidden border-r p-5 md:block">
           <div className="flex items-center justify-between text-[11px] text-muted-foreground">
@@ -181,9 +183,19 @@ function EditorMock() {
               <span className="size-1.5 rounded-full bg-saved-dot" /> Saved
             </span>
           </div>
-          <div className="mt-4 flex gap-2">
-            <MiniStat value="2:26" label="runtime" />
-            <MiniStat value="335" label="words" />
+          <div
+            className="mt-4 flex aspect-video items-center justify-center rounded-lg px-2"
+            style={{ background: HERO_THUMB.color }}
+          >
+            <span className="font-anton text-center text-[15px] leading-[1.08] tracking-wide text-white [text-shadow:0_1px_2px_rgb(0_0_0/0.25)]">
+              {HERO_THUMB.lines.map((line) => (
+                <ThumbLine key={line} line={line} />
+              ))}
+            </span>
+          </div>
+          <div className="mt-3 flex gap-2">
+            <MiniStat value="8:12" label="runtime" />
+            <MiniStat value="1,132" label="words" />
           </div>
           <p className="mono-label mt-5">Script outline</p>
           <ul className="mt-2 flex flex-col gap-0.5">
@@ -203,7 +215,7 @@ function EditorMock() {
         </aside>
 
         {/* script */}
-        <div className="p-6 sm:p-8">
+        <div className="p-6 sm:p-9">
           <div className="flex items-center justify-between">
             <p className="mono-label">Script</p>
             <span className="flex items-center overflow-hidden rounded-full bg-secondary text-[11px] font-medium">
@@ -216,26 +228,43 @@ function EditorMock() {
               </span>
             </span>
           </div>
-          <h2 className="mt-2 text-xl font-bold tracking-tight sm:text-2xl">
-            I tried Reddit Marketing for 7 days
+          <h2 className="mt-2 text-2xl font-bold tracking-tight sm:text-3xl">
+            I woke up at 5AM for 30 days
           </h2>
-          <p className="mt-1 font-mono text-[10px] text-muted-foreground">
-            9 beats · 335 words · 2:26
+          <p className="mt-1.5 font-mono text-[10px] text-muted-foreground">
+            8 beats · 1,132 words · 8:12
           </p>
 
-          <div className="mt-6 flex flex-col gap-5">
+          <div className="mt-7 flex flex-col gap-6">
             <div className="border-l-2 pl-4" style={{ borderColor: BEAT.hook }}>
               <div className="flex items-baseline gap-2">
                 <BeatTag color={BEAT.hook}>Hook</BeatTag>
                 <span className="text-[11px] font-medium text-muted-foreground">Hook</span>
                 <span className="ml-auto font-mono text-[10px] text-muted-foreground">
-                  27w · 0:12
+                  31w · 0:13
                 </span>
               </div>
-              <p className="mt-1.5 text-[13px] leading-relaxed text-foreground/90">
-                <span className="shot-mark">Reddit as a marketing channel has been trending</span>{" "}
-                hard lately. I wanted to see if it could actually get ME users, so I
-                ran a 7-day experiment.
+              <p className="mt-2 text-sm leading-relaxed text-foreground/90">
+                Every productivity guru swears the 5AM club changed their life. So
+                I <span className="shot-mark">set my alarm for 5AM, thirty days straight</span>,
+                and tracked everything: sleep, focus, mood. Day 12 nearly broke me.
+              </p>
+            </div>
+
+            <div className="pl-4">
+              <div className="flex items-baseline gap-2">
+                <BeatTag color={BEAT.body}>Body</BeatTag>
+                <span className="text-[11px] font-medium text-muted-foreground">
+                  Context · Night owl
+                </span>
+                <span className="ml-auto font-mono text-[10px] text-muted-foreground">
+                  87w · 0:38
+                </span>
+              </div>
+              <p className="mt-2 text-sm leading-relaxed text-foreground/90">
+                Quick context: I have not willingly seen a sunrise in ten years. My
+                best work ships after midnight, which is exactly why this needed to
+                happen…
               </p>
             </div>
 
@@ -244,12 +273,12 @@ function EditorMock() {
                 <BeatTag color={BEAT.rehook}>Re-hook</BeatTag>
                 <span className="text-[11px] font-medium text-muted-foreground">Re-hook</span>
                 <span className="ml-auto font-mono text-[10px] text-muted-foreground">
-                  17w · 0:07
+                  20w · 0:09
                 </span>
               </div>
-              <p className="mt-1.5 text-[13px] leading-relaxed text-foreground/90">
-                If you don&rsquo;t want YOUR posts shredded to pieces, stick around
-                till the end.
+              <p className="mt-2 text-sm leading-relaxed text-foreground/90">
+                Stick around for week three, because the one change that actually
+                stuck is not what you think.
               </p>
             </div>
 
@@ -257,15 +286,16 @@ function EditorMock() {
               <div className="flex items-baseline gap-2">
                 <BeatTag color={BEAT.body}>Body</BeatTag>
                 <span className="text-[11px] font-medium text-muted-foreground">
-                  Section 1 · Get the vibe
+                  Week 1 · The pain
                 </span>
                 <span className="ml-auto font-mono text-[10px] text-muted-foreground">
-                  55w · 0:24
+                  234w · 1:42
                 </span>
               </div>
-              <p className="mt-1.5 text-[13px] leading-relaxed text-foreground/90">
-                Before any experiment on a new platform, figure out if your ideal
-                customer even hangs out there…
+              <p className="mt-2 text-sm leading-relaxed text-foreground/90">
+                Day one felt like a superpower. By day four the snooze button was
+                winning, and Friday night I fell asleep at 9PM in my street
+                clothes…
               </p>
             </div>
           </div>
@@ -281,19 +311,33 @@ function EditorMock() {
           </div>
           <p className="mt-2 text-[11px] text-muted-foreground">
             <span style={{ color: BEAT.hook }}>Hook</span>
-            <span className="font-mono"> · 8% of runtime</span>
+            <span className="font-mono"> · 3% of runtime</span>
           </p>
 
-          <p className="mono-label mt-6">B-roll &amp; shots · 2</p>
+          <p className="mono-label mt-6">B-roll &amp; shots · 4</p>
           <ul className="mt-2 flex flex-col gap-2">
-            <MiniShotRow text="Screen-rec: trending tab" />
-            <MiniShotRow text="Text overlay: “7 DAYS”" done />
+            <MiniShotRow text="Alarm macro: 5:00 flip" done />
+            <MiniShotRow text="Day 1 diary cam" done />
+            <MiniShotRow text="Timelapse: sunrise desk" />
+            <MiniShotRow text="Coffee pour close-up" />
           </ul>
 
-          <p className="mono-label mt-6">Research · 1</p>
-          <div className="mt-2 flex items-center gap-1.5 text-[11px]">
-            <FileText className="size-3 text-muted-foreground" />
-            Competitor teardown
+          <p className="mono-label mt-6">Research · 2</p>
+          <ul className="mt-2 flex flex-col gap-1.5 text-[11px]">
+            <li className="flex items-center gap-1.5">
+              <FileText className="size-3 shrink-0 text-muted-foreground" />
+              Sleep study notes
+            </li>
+            <li className="flex items-center gap-1.5">
+              <FileText className="size-3 shrink-0 text-muted-foreground" />
+              5AM club teardown
+            </li>
+          </ul>
+
+          <p className="mono-label mt-6">References · 1</p>
+          <div className="mt-2 flex items-center gap-2 rounded-lg border bg-background px-2.5 py-1.5 text-[11px] text-muted-foreground">
+            <Play className="size-3 shrink-0 fill-current" />
+            <span className="truncate">youtube.com/watch?v=Vv8…</span>
           </div>
         </aside>
       </div>
@@ -331,9 +375,9 @@ function MiniShotRow({ text, done = false }: { text: string; done?: boolean }) {
 
 const FEED = [
   {
-    color: "#D6336C",
-    lines: ["REDDIT", "MARKETING", "*7 DAYS*"],
-    title: "I tried Reddit Marketing for 7 DAYS",
+    color: "#0C8599",
+    lines: ["I WOKE UP", "AT *5AM*", "30 DAYS"],
+    title: "I woke up at 5AM for 30 days",
     meta: "In Production · finish the rough cut",
     stage: "var(--stage-production)",
   },
@@ -469,8 +513,8 @@ const BOARD_COLS = [
   {
     label: "Production",
     dot: "var(--stage-production)",
-    cards: ["I tried Reddit Marketing for 7 DAYS"],
-    thumb: "#D6336C",
+    cards: ["I woke up at 5AM for 30 days"],
+    thumb: "#0C8599",
   },
   {
     label: "Published",

@@ -2,7 +2,7 @@ import { boolean, index, integer, pgTable, text, timestamp, uuid } from "drizzle
 
 import { videos } from "./videos";
 
-/** Freeform rows; video creation instantiates DEFAULT_CHECKLIST from lib/stages.ts. */
+/** Freeform rows; videos start with none. */
 export const checklistItems = pgTable(
   "checklist_items",
   {
