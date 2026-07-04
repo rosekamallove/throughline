@@ -5,10 +5,12 @@ import {
   DragOverlay,
   KeyboardSensor,
   PointerSensor,
-  closestCorners,
+  pointerWithin,
+  rectIntersection,
   useDroppable,
   useSensor,
   useSensors,
+  type CollisionDetection,
   type DragEndEvent,
   type DragOverEvent,
   type DragStartEvent,
@@ -24,7 +26,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { ChevronsLeftRight, ChevronsRightLeft } from "lucide-react";
 import { LazyMotion, domAnimation, m } from "motion/react";
 import { useRouter } from "next/navigation";
-import { useMemo, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { ThumbnailPackaging } from "@/components/video/thumbnail-packaging";
@@ -37,6 +39,13 @@ import type { Video } from "@/trpc/types";
 import { useTRPC } from "@/trpc/client";
 
 const EASE_OUT_QUART = [0.32, 0.72, 0, 1] as const;
+
+// The drop target should be whatever is under the POINTER — corner-distance
+// heuristics get ambiguous at column boundaries and on empty columns.
+const boardCollision: CollisionDetection = (args) => {
+  const hits = pointerWithin(args);
+  return hits.length ? hits : rectIntersection(args);
+};
 
 const STAGGER_CONTAINER = {
   hidden: {},
@@ -102,13 +111,15 @@ function BoardColumn({
   stage,
   videos,
   collapsed,
+  highlight,
 }: {
   stage: Stage;
   videos: Video[];
   collapsed: boolean;
+  highlight: boolean;
 }) {
   const meta = STAGE_META[stage];
-  const { setNodeRef, isOver } = useDroppable({ id: stage, disabled: collapsed });
+  const { setNodeRef } = useDroppable({ id: stage, disabled: collapsed });
 
   if (collapsed) {
     return (
@@ -147,8 +158,8 @@ function BoardColumn({
       <div
         ref={setNodeRef}
         className={cn(
-          "flex min-h-0 flex-1 flex-col gap-2.5 overflow-y-auto rounded-b-2xl p-2.5 pt-1 transition-colors",
-          isOver && "bg-accent/50",
+          "flex min-h-0 flex-1 flex-col gap-2.5 overflow-y-auto rounded-b-2xl p-2.5 pt-1 transition-colors duration-150",
+          highlight && "bg-accent/60",
         )}
       >
         <SortableContext items={videos.map((v) => v.id)} strategy={verticalListSortingStrategy}>
@@ -157,7 +168,12 @@ function BoardColumn({
           ))}
         </SortableContext>
         {videos.length === 0 && (
-          <p className="rounded-xl border border-dashed p-4 text-center text-[12px] text-muted-foreground">
+          <p
+            className={cn(
+              "flex flex-1 items-center justify-center rounded-xl border border-dashed text-[12px] text-muted-foreground transition-colors duration-150",
+              highlight && "border-ring text-foreground",
+            )}
+          >
             Drop here
           </p>
         )}
@@ -193,22 +209,11 @@ export function VideoBoard({ videos }: { videos: Video[] }) {
 
   function resolveOverStage(overId: string | number): Stage | null {
     if (STAGES.includes(overId as Stage)) return overId as Stage;
-    // Hovering the dragged card itself must not change the target column —
-    // its display position already reflects the hover, and resolving it via
-    // its original stage causes an infinite placement flip-flop.
-    if (activeVideo && overId === activeVideo.id) return overStageRef.current;
     const video = videos.find((v) => v.id === overId);
     return video ? video.stage : null;
   }
 
-  // Live placement: while dragging, show the active card in the hovered column
-  // so siblings reflow and a real drop slot appears (axis pattern).
-  const displayVideos = useMemo(() => {
-    if (!activeVideo || !dragOverStage || activeVideo.stage === dragOverStage) return videos;
-    return videos.map((v) => (v.id === activeVideo.id ? { ...v, stage: dragOverStage } : v));
-  }, [videos, activeVideo, dragOverStage]);
-
-  const byStage = (stage: Stage) => displayVideos.filter((v) => v.stage === stage);
+  const byStage = (stage: Stage) => videos.filter((v) => v.stage === stage);
 
   function handleDragStart(event: DragStartEvent) {
     const video = videos.find((v) => v.id === event.active.id);
@@ -247,7 +252,7 @@ export function VideoBoard({ videos }: { videos: Video[] }) {
     <LazyMotion features={domAnimation}>
       <DndContext
         sensors={sensors}
-        collisionDetection={closestCorners}
+        collisionDetection={boardCollision}
         onDragStart={handleDragStart}
         onDragOver={handleDragOver}
         onDragEnd={handleDragEnd}
@@ -265,6 +270,11 @@ export function VideoBoard({ videos }: { videos: Video[] }) {
               stage={stage}
               videos={byStage(stage)}
               collapsed={collapsed[stage] ?? false}
+              highlight={
+                dragOverStage === stage &&
+                activeVideo !== null &&
+                activeVideo.stage !== stage
+              }
             />
           ))}
         </m.div>

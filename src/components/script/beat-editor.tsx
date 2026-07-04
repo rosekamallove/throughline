@@ -5,7 +5,9 @@ import { KEYS, NodeApi, type Value } from "platejs";
 import { Plate, useEditorRef, usePlateEditor } from "platejs/react";
 
 import { BasicNodesKit } from "@/components/editor/plugins/basic-nodes-kit";
+import { ListKit } from "@/components/editor/plugins/list-kit";
 import { ShotKit } from "@/components/editor/plugins/shot-kit";
+import { SlashKit } from "@/components/editor/plugins/slash-kit";
 import { Editor, EditorContainer } from "@/components/ui/editor";
 import { FloatingToolbar } from "@/components/ui/floating-toolbar";
 import { MarkToolbarButton } from "@/components/ui/mark-toolbar-button";
@@ -54,7 +56,7 @@ export function BeatEditor({
   onAddShot?: (text: string, shotId: string) => void;
 }) {
   const editor = usePlateEditor({
-    plugins: [...BasicNodesKit, ...ShotKit],
+    plugins: [...BasicNodesKit, ...ListKit, ...SlashKit, ...ShotKit],
     value: initialValue,
   });
 

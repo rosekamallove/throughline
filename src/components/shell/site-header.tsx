@@ -2,14 +2,18 @@
 
 import { Search } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useTheme } from "next-themes";
 
-import { ThemeToggle } from "@/components/shell/theme-toggle";
-import { CreateVideoDialog } from "@/components/video/create-video-dialog";
+import { CreateVideoInline } from "@/components/video/create-video-inline";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
@@ -18,6 +22,7 @@ import { signOut } from "@/lib/auth-client";
 
 export function SiteHeader({ userInitial = "R" }: { userInitial?: string }) {
   const router = useRouter();
+  const { theme, setTheme } = useTheme();
 
   async function onSignOut() {
     await signOut();
@@ -35,8 +40,7 @@ export function SiteHeader({ userInitial = "R" }: { userInitial?: string }) {
       </div>
 
       <div className="ml-auto flex items-center gap-2">
-        <CreateVideoDialog />
-        <ThemeToggle />
+        <CreateVideoInline />
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <button aria-label="Account" className="rounded-full">
@@ -47,7 +51,14 @@ export function SiteHeader({ userInitial = "R" }: { userInitial?: string }) {
               </Avatar>
             </button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
+          <DropdownMenuContent align="end" className="w-40">
+            <DropdownMenuLabel className="mono-label">Theme</DropdownMenuLabel>
+            <DropdownMenuRadioGroup value={theme} onValueChange={setTheme}>
+              <DropdownMenuRadioItem value="system">System</DropdownMenuRadioItem>
+              <DropdownMenuRadioItem value="light">Light</DropdownMenuRadioItem>
+              <DropdownMenuRadioItem value="dark">Dark</DropdownMenuRadioItem>
+            </DropdownMenuRadioGroup>
+            <DropdownMenuSeparator />
             <DropdownMenuItem onClick={onSignOut}>Sign out</DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
