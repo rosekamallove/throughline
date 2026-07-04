@@ -4,7 +4,7 @@ import { z } from "zod";
 
 import { BEAT_KINDS } from "@/lib/beats";
 import { SCRIPT_TEMPLATES } from "@/lib/templates";
-import { brollItemSchema } from "@/lib/types";
+import { brollItemSchema, type BeatTextVariant } from "@/lib/types";
 import { beats, videos } from "@/server/db/schema";
 
 import { createTRPCRouter, protectedProcedure } from "../trpc";
@@ -58,7 +58,6 @@ export const beatRouter = createTRPCRouter({
           orderBy: [asc(beats.position)],
           columns: { id: true, position: true },
         });
-        // Shift everything after the insertion point down by one.
         const target = input.afterPosition + 1;
         for (const b of existing.filter((b) => b.position >= target).reverse()) {
           await tx.update(beats).set({ position: b.position + 1 }).where(eq(beats.id, b.id));
@@ -88,12 +87,22 @@ export const beatRouter = createTRPCRouter({
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      await assertBeatOwned(ctx, input.id);
+      const beat = await assertBeatOwned(ctx, input.id);
+      // The beat's text/content mirror the active variant — keep both in sync
+      // so switching away and back never loses edits.
+      const variants = beat.activeVariantId
+        ? beat.variants.map((v) =>
+            v.id === beat.activeVariantId
+              ? { ...v, text: input.text, content: input.content ?? v.content }
+              : v,
+          )
+        : beat.variants;
       const [updated] = await ctx.db
         .update(beats)
         .set({
           text: input.text,
           ...(input.content ? { content: input.content } : {}),
+          variants,
           updatedAt: new Date(),
         })
         .where(eq(beats.id, input.id))
@@ -157,6 +166,77 @@ export const beatRouter = createTRPCRouter({
         }
         return { ok: true };
       });
+    }),
+
+  /** Fork the current take into a new variant and switch to it. */
+  addVariant: protectedProcedure
+    .input(z.object({ id: z.uuid() }))
+    .mutation(async ({ ctx, input }) => {
+      const beat = await assertBeatOwned(ctx, input.id);
+      // First fork also snapshots the original so it stays selectable as "A".
+      const variants = [...beat.variants];
+      if (variants.length === 0) {
+        variants.push({
+          id: crypto.randomUUID(),
+          label: "A",
+          text: beat.text,
+          content: (beat.content as BeatTextVariant["content"]) ?? null,
+        });
+      }
+      const label = String.fromCharCode(65 + variants.length);
+      const fresh: BeatTextVariant = {
+        id: crypto.randomUUID(),
+        label,
+        text: beat.text,
+        content: (beat.content as BeatTextVariant["content"]) ?? null,
+      };
+      variants.push(fresh);
+      const [updated] = await ctx.db
+        .update(beats)
+        .set({ variants, activeVariantId: fresh.id, updatedAt: new Date() })
+        .where(eq(beats.id, input.id))
+        .returning();
+      return updated;
+    }),
+
+  switchVariant: protectedProcedure
+    .input(z.object({ id: z.uuid(), variantId: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      const beat = await assertBeatOwned(ctx, input.id);
+      const target = beat.variants.find((v) => v.id === input.variantId);
+      if (!target) throw new TRPCError({ code: "NOT_FOUND", message: "Unknown variant" });
+      const [updated] = await ctx.db
+        .update(beats)
+        .set({
+          text: target.text,
+          content: target.content,
+          activeVariantId: target.id,
+          updatedAt: new Date(),
+        })
+        .where(eq(beats.id, input.id))
+        .returning();
+      return updated;
+    }),
+
+  deleteVariant: protectedProcedure
+    .input(z.object({ id: z.uuid(), variantId: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      const beat = await assertBeatOwned(ctx, input.id);
+      const remaining = beat.variants.filter((v) => v.id !== input.variantId);
+      const wasActive = beat.activeVariantId === input.variantId;
+      const fallback = wasActive ? remaining[0] : null;
+      const [updated] = await ctx.db
+        .update(beats)
+        .set({
+          variants: remaining.length > 1 ? remaining : [],
+          activeVariantId:
+            remaining.length > 1 ? (fallback?.id ?? beat.activeVariantId) : null,
+          ...(fallback ? { text: fallback.text, content: fallback.content } : {}),
+          updatedAt: new Date(),
+        })
+        .where(eq(beats.id, input.id))
+        .returning();
+      return updated;
     }),
 
   /** Replace the video's beats with a template's structure. Destructive —

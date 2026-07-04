@@ -9,8 +9,10 @@ import { toast } from "sonner";
 
 import { BeatBlock } from "@/components/script/beat-block";
 import { CoachPanel } from "@/components/script/coach-panel";
+import { ListenButton } from "@/components/script/listen-button";
 import { OutlineRail } from "@/components/script/outline-rail";
 import type { TimedBeat } from "@/components/script/pacing-bar";
+import { ResearchPanel } from "@/components/script/research-panel";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { BEAT_META, type BeatKind } from "@/lib/beats";
@@ -161,6 +163,34 @@ export default function ScriptEditorPage({ params }: { params: Promise<{ id: str
     }),
   );
 
+  // Variant swaps replace the beat's text, so any in-flight draft must land
+  // first and the local draft must be dropped or it would shadow the swap.
+  function flushDraft(beatId: string) {
+    const timer = timers.current[beatId];
+    if (timer) {
+      clearTimeout(timer);
+      delete timers.current[beatId];
+      const text = drafts[beatId];
+      if (text != null) {
+        updateText.mutate({ id: beatId, text, content: contentDrafts.current[beatId] });
+      }
+    }
+    setDrafts((d) => {
+      const next = { ...d };
+      delete next[beatId];
+      return next;
+    });
+    delete contentDrafts.current[beatId];
+  }
+
+  const variantOpts = {
+    onSuccess: () => void queryClient.invalidateQueries({ queryKey: beatsKey }),
+    onError: (e: { message: string }) => toast.error(e.message),
+  };
+  const addVariant = useMutation(trpc.beat.addVariant.mutationOptions(variantOpts));
+  const switchVariant = useMutation(trpc.beat.switchVariant.mutationOptions(variantOpts));
+  const deleteVariant = useMutation(trpc.beat.deleteVariant.mutationOptions(variantOpts));
+
   const timed: TimedBeat[] = useMemo(
     () =>
       (beats ?? []).map((b) => {
@@ -210,9 +240,12 @@ export default function ScriptEditorPage({ params }: { params: Promise<{ id: str
           />
           {pendingSaves > 0 ? "Saving…" : "Saved"}
         </span>
-        <Button variant="secondary" size="sm" className="ml-auto rounded-full">
-          <Share2 className="size-3.5" /> Share
-        </Button>
+        <div className="ml-auto flex items-center gap-2">
+          <ListenButton beats={timed} onBeatStart={setActiveId} />
+          <Button variant="secondary" size="sm" className="rounded-full">
+            <Share2 className="size-3.5" /> Share
+          </Button>
+        </div>
       </header>
 
       <div className="flex min-h-0 flex-1">
@@ -245,7 +278,7 @@ export default function ScriptEditorPage({ params }: { params: Promise<{ id: str
             <div className="mt-8 flex flex-col gap-4">
               {timed.map((beat) => (
                 <BeatBlock
-                  key={beat.id}
+                  key={`${beat.id}:${beat.activeVariantId ?? "base"}`}
                   beat={beat}
                   active={beat.id === activeId}
                   onActivate={() => setActiveId(beat.id)}
@@ -255,6 +288,28 @@ export default function ScriptEditorPage({ params }: { params: Promise<{ id: str
                   onChangeLabel={(label) => updateBeat.mutate({ id: beat.id, label })}
                   onChangeKind={(kind) => updateBeat.mutate({ id: beat.id, kind })}
                   onDelete={() => deleteBeat.mutate({ id: beat.id })}
+                  onAddShot={(shotText) => {
+                    setBroll.mutate({
+                      id: beat.id,
+                      broll: [
+                        ...beat.broll,
+                        { id: crypto.randomUUID(), text: shotText.slice(0, 140), done: false },
+                      ],
+                    });
+                    toast.success("Added to b-roll & shots");
+                  }}
+                  onAddVariant={() => {
+                    flushDraft(beat.id);
+                    addVariant.mutate({ id: beat.id });
+                  }}
+                  onSwitchVariant={(variantId) => {
+                    flushDraft(beat.id);
+                    switchVariant.mutate({ id: beat.id, variantId });
+                  }}
+                  onDeleteVariant={(variantId) => {
+                    flushDraft(beat.id);
+                    deleteVariant.mutate({ id: beat.id, variantId });
+                  }}
                 />
               ))}
             </div>
@@ -270,6 +325,8 @@ export default function ScriptEditorPage({ params }: { params: Promise<{ id: str
           }
         />
       </div>
+
+      <ResearchPanel videoId={videoId} />
     </div>
   );
 }

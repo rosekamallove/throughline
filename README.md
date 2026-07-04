@@ -22,7 +22,7 @@ pnpm dev
 ```
 
 Sign in with `ALLOWED_EMAIL` / `SEED_PASSWORD` from `.env`
-(default `rose@groovehq.com` / `throughline-dev`).
+(default `rose@groovehq.com` / `password`).
 
 ## Google sign-in (optional until the YouTube sync)
 

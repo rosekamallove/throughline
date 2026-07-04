@@ -10,7 +10,6 @@ export function wordsToSeconds(words: number): number {
   return Math.round(words / WORDS_PER_SECOND);
 }
 
-/** 754 → "12:34" */
 export function formatDuration(totalSeconds: number): string {
   const m = Math.floor(totalSeconds / 60);
   const s = totalSeconds % 60;

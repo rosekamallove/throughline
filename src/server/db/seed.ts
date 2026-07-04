@@ -284,7 +284,9 @@ async function main() {
 
   // Credential account so email+password sign-in works before Google OAuth
   // is configured. Hash must match Better Auth's own (scrypt via its crypto).
+  // Upsert so changing SEED_PASSWORD takes effect on reseed.
   const { hashPassword } = await import("better-auth/crypto");
+  const password = await hashPassword(process.env.SEED_PASSWORD ?? "password");
   await db
     .insert(account)
     .values({
@@ -292,9 +294,9 @@ async function main() {
       accountId: USER_ID,
       providerId: "credential",
       userId: USER_ID,
-      password: await hashPassword(process.env.SEED_PASSWORD ?? "throughline-dev"),
+      password,
     })
-    .onConflictDoNothing();
+    .onConflictDoUpdate({ target: account.id, set: { password, updatedAt: new Date() } });
 
   // Deterministic video ids → cascade wipes beats/variants/checklists too.
   for (const v of SEED_VIDEOS) {

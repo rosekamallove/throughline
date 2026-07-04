@@ -1,6 +1,6 @@
 "use client";
 
-import { MoreHorizontal, Trash2 } from "lucide-react";
+import { GitBranch, MoreHorizontal, Trash2 } from "lucide-react";
 import type { Value } from "platejs";
 import { useState } from "react";
 
@@ -27,6 +27,10 @@ export function BeatBlock({
   onChangeLabel,
   onChangeKind,
   onDelete,
+  onAddShot,
+  onAddVariant,
+  onSwitchVariant,
+  onDeleteVariant,
 }: {
   beat: TimedBeat;
   active: boolean;
@@ -35,13 +39,19 @@ export function BeatBlock({
   onChangeLabel: (label: string) => void;
   onChangeKind: (kind: BeatKind) => void;
   onDelete: () => void;
+  onAddShot: (text: string) => void;
+  onAddVariant: () => void;
+  onSwitchVariant: (variantId: string) => void;
+  onDeleteVariant: (variantId: string) => void;
 }) {
   const meta = BEAT_META[beat.kind];
   const [label, setLabel] = useState(beat.label);
-  // Initial value only — the Plate editor owns its state after mount.
+  // Initial value only — the Plate editor owns its state after mount. The
+  // parent re-keys this block on variant switches to remount with new text.
   const [initialValue] = useState<Value>(
     () => (beat.content as Value | null) ?? textToValue(beat.text),
   );
+  const activeVariant = beat.variants.find((v) => v.id === beat.activeVariantId);
 
   return (
     <section
@@ -61,6 +71,26 @@ export function BeatBlock({
         >
           {meta.label}
         </span>
+
+        {beat.variants.length > 0 && (
+          <span className="flex items-center gap-0.5">
+            {beat.variants.map((v) => (
+              <button
+                key={v.id}
+                onClick={() => v.id !== beat.activeVariantId && onSwitchVariant(v.id)}
+                className={cn(
+                  "rounded px-1.5 py-0.5 font-mono text-[10px] font-semibold",
+                  v.id === beat.activeVariantId
+                    ? "bg-foreground text-background"
+                    : "text-muted-foreground hover:bg-accent hover:text-foreground",
+                )}
+              >
+                {v.label}
+              </button>
+            ))}
+          </span>
+        )}
+
         <input
           value={label}
           onChange={(e) => setLabel(e.target.value)}
@@ -82,6 +112,15 @@ export function BeatBlock({
             <MoreHorizontal className="size-4" />
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={onAddVariant}>
+              <GitBranch className="size-4" /> New variant of this beat
+            </DropdownMenuItem>
+            {activeVariant && beat.variants.length > 1 && (
+              <DropdownMenuItem onClick={() => onDeleteVariant(activeVariant.id)}>
+                <Trash2 className="size-4" /> Delete variant {activeVariant.label}
+              </DropdownMenuItem>
+            )}
+            <DropdownMenuSeparator />
             {BEAT_KINDS.filter((k) => k !== beat.kind).map((kind) => (
               <DropdownMenuItem key={kind} onClick={() => onChangeKind(kind)}>
                 <span className={cn("size-2 rounded-full", BEAT_META[kind].dot)} />
@@ -100,6 +139,7 @@ export function BeatBlock({
         initialValue={initialValue}
         placeholder="Write this beat…"
         onChange={onChangeContent}
+        onAddShot={onAddShot}
       />
     </section>
   );

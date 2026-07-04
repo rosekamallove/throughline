@@ -134,7 +134,6 @@ export interface YouTubeVideo {
   durationSec: number;
 }
 
-/** PT1H2M3S → seconds */
 export function parseIsoDuration(iso: string): number {
   const m = /PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/.exec(iso);
   if (!m) return 0;

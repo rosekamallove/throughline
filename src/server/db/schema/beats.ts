@@ -1,6 +1,6 @@
 import { index, integer, jsonb, pgEnum, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
 
-import type { BrollItem } from "@/lib/types";
+import type { BeatTextVariant, BrollItem } from "@/lib/types";
 
 import { videos } from "./videos";
 
@@ -24,6 +24,10 @@ export const beats = pgTable(
     /** Coach guidance override; null falls back to the per-kind default in lib/beats.ts. */
     guide: text("guide"),
     broll: jsonb("broll").$type<BrollItem[]>().notNull().default([]),
+    /** Alternate takes of this beat. text/content above always mirror the
+     *  active variant so stats and the editor never special-case variants. */
+    variants: jsonb("variants").$type<BeatTextVariant[]>().notNull().default([]),
+    activeVariantId: text("active_variant_id"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },

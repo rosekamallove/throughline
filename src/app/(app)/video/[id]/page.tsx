@@ -145,7 +145,6 @@ export default function VideoDetailPage({ params }: { params: Promise<{ id: stri
       </div>
 
       <div className="grid gap-8 md:grid-cols-[400px_minmax(0,1fr)]">
-        {/* Left: hero + packaging (thumbnails + titles live here now) */}
         <div className="flex flex-col gap-6">
           <div className="relative">
             <ThumbnailPackaging
@@ -185,7 +184,6 @@ export default function VideoDetailPage({ params }: { params: Promise<{ id: stri
           </section>
         </div>
 
-        {/* Right: title, stepper, script, checklist, stats */}
         <div className="flex flex-col gap-6">
           <div>
             <input

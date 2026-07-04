@@ -24,7 +24,6 @@ import { BEAT_META } from "@/lib/beats";
 import { SCRIPT_TEMPLATES, type ScriptTemplate } from "@/lib/templates";
 import { cn } from "@/lib/utils";
 
-/** Colored beat-structure strip: one segment per beat, colored by kind. */
 function StructureStrip({ template }: { template: ScriptTemplate }) {
   return (
     <div className="flex h-1.5 w-full gap-px overflow-hidden rounded-full">
