@@ -3,6 +3,7 @@ import { and, asc, eq } from "drizzle-orm";
 import { z } from "zod";
 
 import { notes, referenceLinks, videos } from "@/server/db/schema";
+import { youtubeIdFromUrl } from "@/lib/youtube";
 
 import { createTRPCRouter, protectedProcedure } from "../trpc";
 
@@ -14,12 +15,6 @@ async function assertVideoOwned(ctx: Ctx, videoId: string) {
     columns: { id: true },
   });
   if (!video) throw new TRPCError({ code: "NOT_FOUND" });
-}
-
-export function youtubeIdFromUrl(url: string): string | null {
-  const m =
-    /(?:youtube\.com\/(?:watch\?(?:.*&)?v=|shorts\/|embed\/)|youtu\.be\/)([\w-]{11})/.exec(url);
-  return m?.[1] ?? null;
 }
 
 export const researchRouter = createTRPCRouter({

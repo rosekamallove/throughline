@@ -19,6 +19,7 @@ import { RailSection } from "@/components/script/rail-section";
 import { Input } from "@/components/ui/input";
 import { useEditorPrefs } from "@/lib/editor-prefs";
 import { cn } from "@/lib/utils";
+import { youtubeIdFromUrl } from "@/lib/youtube";
 import { useTRPC } from "@/trpc/client";
 import type { RouterOutputs } from "@/trpc/types";
 
@@ -27,12 +28,6 @@ type Reference = RouterOutputs["research"]["byVideo"]["references"][number];
 
 const AUTOSAVE_MS = 600;
 const EMPTY_DOC: Value = [{ type: "p", children: [{ text: "" }] }];
-
-export function youtubeIdFromUrl(url: string): string | null {
-  const m =
-    /(?:youtube\.com\/(?:watch\?(?:.*&)?v=|shorts\/|embed\/)|youtu\.be\/)([\w-]{11})/.exec(url);
-  return m?.[1] ?? null;
-}
 
 export function ResearchRail({ videoId }: { videoId: string }) {
   const trpc = useTRPC();

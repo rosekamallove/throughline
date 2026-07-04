@@ -14,6 +14,7 @@ import { PipelineStepper } from "@/components/video/pipeline-stepper";
 import { StatTile } from "@/components/video/stat-tile";
 import { ThumbnailPackaging } from "@/components/video/thumbnail-packaging";
 import { VideoCardMenu } from "@/components/video/video-card-menu";
+import { YouTubeLink } from "@/components/video/youtube-link";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -254,6 +255,8 @@ export default function VideoDetailPage({ params }: { params: Promise<{ id: stri
             <StatTile label="Words" value={String(totalWords)} />
             <StatTile label="Est. CTR" value={estCtr != null ? `${estCtr}%` : "—"} />
           </div>
+
+          <YouTubeLink videoId={id} youtubeVideoId={video.youtubeVideoId} />
         </div>
       </div>
 

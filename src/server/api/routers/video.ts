@@ -4,6 +4,7 @@ import { z } from "zod";
 
 import { STAGES, stageIndex } from "@/lib/stages";
 import { thumbTextSchema } from "@/lib/types";
+import { youtubeIdFromUrl } from "@/lib/youtube";
 import { videos } from "@/server/db/schema";
 
 import { createTRPCRouter, protectedProcedure } from "../trpc";
@@ -95,6 +96,74 @@ export const videoRouter = createTRPCRouter({
       await ctx.db
         .delete(videos)
         .where(and(eq(videos.id, input.id), eq(videos.userId, ctx.session.user.id)));
+      return { id: input.id };
+    }),
+
+  // Stamp a Throughline video with its published YouTube id so a later sync
+  // updates this row (views/CTR/thumbnail) instead of importing a duplicate.
+  linkYouTube: protectedProcedure
+    .input(z.object({ id: z.uuid(), url: z.string().min(1) }))
+    .mutation(async ({ ctx, input }) => {
+      const ytId = youtubeIdFromUrl(input.url);
+      if (!ytId) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "That doesn't look like a YouTube video URL.",
+        });
+      }
+
+      const target = await ctx.db.query.videos.findFirst({
+        where: and(eq(videos.id, input.id), eq(videos.userId, ctx.session.user.id)),
+      });
+      if (!target) throw new TRPCError({ code: "NOT_FOUND" });
+
+      // If a prior sync already imported this exact video as its own card,
+      // absorb its stats onto the target and drop the duplicate. If instead a
+      // different hand-made video already claims this id, refuse.
+      const dup = await ctx.db.query.videos.findFirst({
+        where: and(
+          eq(videos.userId, ctx.session.user.id),
+          eq(videos.youtubeVideoId, ytId),
+        ),
+      });
+
+      const patch: Partial<typeof videos.$inferInsert> = {
+        youtubeVideoId: ytId,
+        stage: "published",
+        progress: 100,
+        updatedAt: new Date(),
+      };
+      let absorbed = false;
+      if (dup && dup.id !== input.id) {
+        if (dup.source !== "youtube") {
+          throw new TRPCError({
+            code: "CONFLICT",
+            message: "That YouTube video is already linked to another video here.",
+          });
+        }
+        patch.views = dup.views;
+        patch.ctr = dup.ctr;
+        patch.durationSec = dup.durationSec;
+        patch.publishedAt = dup.publishedAt;
+        patch.privacy = dup.privacy;
+        patch.thumbImageUrl = target.thumbImageUrl ?? dup.thumbImageUrl;
+        await ctx.db.delete(videos).where(eq(videos.id, dup.id));
+        absorbed = true;
+      }
+
+      await ctx.db.update(videos).set(patch).where(eq(videos.id, input.id));
+      return { id: input.id, youtubeVideoId: ytId, absorbed };
+    }),
+
+  unlinkYouTube: protectedProcedure
+    .input(z.object({ id: z.uuid() }))
+    .mutation(async ({ ctx, input }) => {
+      const [updated] = await ctx.db
+        .update(videos)
+        .set({ youtubeVideoId: null, updatedAt: new Date() })
+        .where(and(eq(videos.id, input.id), eq(videos.userId, ctx.session.user.id)))
+        .returning({ id: videos.id });
+      if (!updated) throw new TRPCError({ code: "NOT_FOUND" });
       return { id: input.id };
     }),
 });
