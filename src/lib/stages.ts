@@ -84,6 +84,7 @@ export const FILTERS = [
   { key: "production", label: "In Production" },
   { key: "scheduled", label: "Scheduled" },
   { key: "published", label: "Published" },
+  { key: "unlisted", label: "Unlisted" },
   { key: "all", label: "All Videos" },
 ] as const;
 

@@ -115,7 +115,7 @@ function AddThumbnailDialogContent({ onCreate }: { onCreate: (input: NewThumbnai
       <DialogHeader>
         <DialogTitle>New thumbnail</DialogTitle>
         <DialogDescription>
-          1280×720, 16:9 — same requirements as YouTube. Images are cropped to fit.
+          1280×720, 16:9, same requirements as YouTube. Images are cropped to fit.
         </DialogDescription>
       </DialogHeader>
 
@@ -193,7 +193,7 @@ function AddThumbnailDialogContent({ onCreate }: { onCreate: (input: NewThumbnai
                 key={i}
                 value={line}
                 onChange={(e) => setLines((ls) => ls.map((l, j) => (j === i ? e.target.value : l)))}
-                placeholder={`Line ${i + 1}${i === 2 ? " — *word* to highlight" : ""}`}
+                placeholder={`Line ${i + 1}${i === 2 ? " (*word* to highlight)" : ""}`}
               />
             ))}
             <DialogFooter>

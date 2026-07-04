@@ -251,7 +251,7 @@ export function TemplateGalleryDialog({
             <DialogDescription>
               {preview
                 ? preview.description || "Your template"
-                : "Proven beat structures. Pick one and make it yours — labels, guides, and pacing come pre-wired."}
+                : "Proven beat structures. Pick one and make it yours: labels, guides, and pacing come pre-wired."}
             </DialogDescription>
           </DialogHeader>
 

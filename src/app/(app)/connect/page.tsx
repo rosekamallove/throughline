@@ -55,7 +55,7 @@ export default function ConnectPage() {
         </h1>
         <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
           Pull in your published videos so every title and thumbnail decision is
-          made in context — next to the real thing, with real numbers.
+          made in context, next to the real thing, with real numbers.
         </p>
 
         <ul className="mt-6 flex flex-col gap-2.5 rounded-xl border bg-muted/50 p-4 text-left">

@@ -1,7 +1,7 @@
 /**
  * Idempotent seed: the 9 videos + 9-beat Reddit-marketing script from the
  * design handoff prototype (Studio.dc.html). Deterministic IDs so URLs
- * survive reseeds. Run with `pnpm db:seed` — this file must NOT import
+ * survive reseeds. Run with `pnpm db:seed`, this file must NOT import
  * anything that imports "server-only" (it runs under tsx, not Next).
  */
 import { eq } from "drizzle-orm";
@@ -154,7 +154,7 @@ const SEED_BEATS: (typeof beats.$inferInsert)[] = [
     label: "Hook",
     position: 0,
     guide: "One line. State the promise and the stakes.",
-    text: "Reddit as a marketing channel has been trending hard lately. I wanted to see if it could actually get ME users — so I ran a 7-day experiment.",
+    text: "Reddit as a marketing channel has been trending hard lately. I wanted to see if it could actually get ME users, so I ran a 7-day experiment.",
     broll: broll("hook", ["Screen-rec: Reddit trending on X", "Text overlay: “7 DAYS”"]),
   },
   {
@@ -163,7 +163,7 @@ const SEED_BEATS: (typeof beats.$inferInsert)[] = [
     label: "Context & Authority",
     position: 1,
     guide: "Earn the right to be heard. Why trust you on this?",
-    text: "The cost of building products is going to zero. In a world where anyone can ship a product, the thing that decides which win is marketing. I sold my last product for $300,000 — it could have been ten times that if I’d known how to get users. Reddit is community-first: no followers needed. Bring real value and you get eyes on it; post a cheap hack and the community shreds it.",
+    text: "The cost of building products is going to zero. In a world where anyone can ship a product, the thing that decides which win is marketing. I sold my last product for $300,000. It could have been ten times that if I’d known how to get users. Reddit is community-first: no followers needed. Bring real value and you get eyes on it; post a cheap hack and the community shreds it.",
     broll: broll("context", ["B-roll: $300K sale screenshot", "Cutaway: a downvote pile-on"], [0]),
   },
   {
@@ -181,7 +181,7 @@ const SEED_BEATS: (typeof beats.$inferInsert)[] = [
     label: "Section 1 · Get the vibe",
     position: 3,
     guide: "Concrete first step. Show it on screen.",
-    text: "Before any experiment on a new platform, figure out if your ideal customer even hangs out there. For Reddit: type in keywords your customers use, then read everything that surfaces — posts, comments, and especially the subreddits. Hover a sub to see members, weekly visitors, and who’s online now. Make a list of every relevant subreddit.",
+    text: "Before any experiment on a new platform, figure out if your ideal customer even hangs out there. For Reddit: type in keywords your customers use, then read everything that surfaces, posts, comments, and especially the subreddits. Hover a sub to see members, weekly visitors, and who’s online now. Make a list of every relevant subreddit.",
     broll: broll("s1", ["Screen-rec: keyword search", "Hover: subreddit member count"], [0]),
   },
   {
@@ -190,7 +190,7 @@ const SEED_BEATS: (typeof beats.$inferInsert)[] = [
     label: "Section 2 · Rank the subreddits",
     position: 4,
     guide: "The meat. Give a repeatable system.",
-    text: "Rank each subreddit qualitatively. Read the rules first. Then study the Hot, Best, and Top posts, plus the Controversial and low performers. Do the same for comments. That tells you what works, what dies, and which subs to shortlist — then write posts that give value first and follow every rule.",
+    text: "Rank each subreddit qualitatively. Read the rules first. Then study the Hot, Best, and Top posts, plus the Controversial and low performers. Do the same for comments. That tells you what works, what dies, and which subs to shortlist, then write posts that give value first and follow every rule.",
     broll: broll("s2", ["Screen-rec: Top posts filter", "Overlay: the 4-rule checklist"]),
   },
   {
@@ -208,7 +208,7 @@ const SEED_BEATS: (typeof beats.$inferInsert)[] = [
     label: "Section 4 · The algorithm",
     position: 6,
     guide: "Explain the mechanism simply.",
-    text: "Reddit runs on karma. More upvotes and comments push your post higher, which earns more impressions, which feeds karma back to your profile. It doesn’t care if you’re new — if the post is good, it gets the attention it deserves. And Reddit ranks on Google for free.",
+    text: "Reddit runs on karma. More upvotes and comments push your post higher, which earns more impressions, which feeds karma back to your profile. It doesn’t care if you’re new, if the post is good, it gets the attention it deserves. And Reddit ranks on Google for free.",
     broll: broll("s4", ["Animation: the karma loop", "Screenshot: post ranking on Google"]),
   },
   {
@@ -217,7 +217,7 @@ const SEED_BEATS: (typeof beats.$inferInsert)[] = [
     label: "Section 5 · Results",
     position: 7,
     guide: "Pay off the hook. Real numbers.",
-    text: "7 posts in 7 days. Here’s exactly what each one did — the views, the signups, and the one that completely flopped.",
+    text: "7 posts in 7 days. Here’s exactly what each one did: the views, the signups, and the one that completely flopped.",
     broll: broll("s5", ["Screen-rec: analytics dashboard", "Text: 7 posts / 7 days"]),
   },
   {
@@ -226,7 +226,7 @@ const SEED_BEATS: (typeof beats.$inferInsert)[] = [
     label: "Conclusion",
     position: 8,
     guide: "Honest reflection + a hook into the next video.",
-    text: "Honestly? I’m still not happy with these results. I think we can do much better — and next video, I’ll show you how.",
+    text: "Honestly? I’m still not happy with these results. I think we can do much better, and next video, I’ll show you how.",
     broll: broll("conclusion", ["B-roll: next-video teaser"]),
   },
 ];

@@ -45,9 +45,13 @@ export const youtubeRouter = createTRPCRouter({
       getCtrByVideo(token),
     ]);
 
+    // Shorts have no isShort flag in the Data API; <=3min is the Shorts
+    // duration cap and this channel's long-form runs well past it.
+    const longform = ytVideos.filter((v) => v.durationSec > 180);
+
     let created = 0;
     let updated = 0;
-    for (const yt of ytVideos) {
+    for (const yt of longform) {
       const stats = {
         title: yt.title,
         views: yt.views,
@@ -55,6 +59,7 @@ export const youtubeRouter = createTRPCRouter({
         durationSec: yt.durationSec,
         publishedAt: yt.publishedAt,
         thumbImageUrl: yt.thumbnailUrl,
+        privacy: yt.privacy,
         updatedAt: new Date(),
       };
       const existing = await ctx.db.query.videos.findFirst({
@@ -81,6 +86,6 @@ export const youtubeRouter = createTRPCRouter({
       }
     }
 
-    return { channel: channel.title, created, updated, total: ytVideos.length };
+    return { channel: channel.title, created, updated, total: longform.length };
   }),
 });

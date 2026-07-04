@@ -5,6 +5,7 @@ import {
   Calendar,
   Check,
   Clock,
+  EyeOff,
   Image as ImageIcon,
   Kanban,
   LayoutGrid,
@@ -31,6 +32,7 @@ const FILTER_ICONS: Record<FilterKey, React.ComponentType<{ className?: string }
   production: VideoIcon,
   scheduled: Calendar,
   published: Check,
+  unlisted: EyeOff,
   all: LayoutGrid,
 };
 
@@ -40,13 +42,23 @@ export default function DashboardPage() {
   const [prefs, setPrefs] = useBoardPrefs();
   const { data: videos, isPending } = useQuery(trpc.video.list.queryOptions());
 
+  // Non-public YouTube imports live only under the Unlisted chip.
+  const listed = (videos ?? []).filter((v) => v.privacy === "public");
+
   const visible = (() => {
     if (!videos) return [];
+    if (filter === "unlisted") return videos.filter((v) => v.privacy !== "public");
     if (filter === "recent") {
-      return [...videos].sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime());
+      // Published videos rank by publish date; drafts by last edit — sync
+      // runs touch updatedAt on every import, so it can't be the key.
+      return [...listed].sort(
+        (a, b) =>
+          (b.publishedAt ?? b.updatedAt).getTime() -
+          (a.publishedAt ?? a.updatedAt).getTime(),
+      );
     }
-    if (filter === "all") return videos;
-    return videos.filter((v) => v.stage === filter);
+    if (filter === "all") return listed;
+    return listed.filter((v) => v.stage === filter);
   })();
 
   const isBoard = prefs.view === "board";
@@ -105,7 +117,7 @@ export default function DashboardPage() {
           ))}
         </div>
       ) : isBoard ? (
-        <VideoBoard videos={videos ?? []} />
+        <VideoBoard videos={listed} />
       ) : visible.length === 0 ? (
         <div className="flex flex-col items-center gap-2 py-24 text-center">
           <p className="text-lg font-medium">Nothing here yet</p>

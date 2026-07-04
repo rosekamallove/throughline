@@ -69,7 +69,7 @@ export function ManageKindsDialog({
     trpc.beat.kindDelete.mutationOptions({
       onSuccess: () => {
         invalidate();
-        toast.success("Kind deleted — its beats are now Body");
+        toast.success("Kind deleted; its beats are now Body");
       },
       onError: (e) => toast.error(e.message),
     }),
@@ -113,7 +113,7 @@ export function ManageKindsDialog({
           <Input
             value={name}
             onChange={(e) => setName(e.target.value)}
-            placeholder="Kind name — e.g. Demo, Skit, Ad read…"
+            placeholder="Kind name, e.g. Demo, Skit, Ad read…"
           />
           <ColorPicker value={color} onChange={setColor} />
           <Input

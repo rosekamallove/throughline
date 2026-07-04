@@ -23,7 +23,7 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { ChevronsLeftRight, ChevronsRightLeft } from "lucide-react";
+import { ChevronsLeftRight, ChevronsRightLeft, Plus } from "lucide-react";
 import { LazyMotion, domAnimation, m } from "motion/react";
 import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
@@ -177,8 +177,62 @@ function BoardColumn({
             Drop here
           </p>
         )}
+        {stage === "ideation" && <QuickAddCard />}
       </div>
     </m.div>
+  );
+}
+
+/** Rapid idea capture at the bottom of the Ideation column. Enter creates
+ *  and keeps the input open so several ideas can land in a row. */
+function QuickAddCard() {
+  const trpc = useTRPC();
+  const queryClient = useQueryClient();
+  const [open, setOpen] = useState(false);
+  const [title, setTitle] = useState("");
+
+  const create = useMutation(
+    trpc.video.create.mutationOptions({
+      onSuccess: () => {
+        void queryClient.invalidateQueries({ queryKey: trpc.video.list.queryKey() });
+        setTitle("");
+      },
+      onError: (e) => toast.error(e.message),
+    }),
+  );
+
+  if (!open) {
+    return (
+      <button
+        onClick={() => setOpen(true)}
+        className="flex shrink-0 items-center gap-2 rounded-xl border border-dashed px-3 py-2.5 text-[13px] text-muted-foreground transition-colors hover:border-ring hover:text-foreground"
+      >
+        <Plus className="size-3.5" /> New video
+      </button>
+    );
+  }
+
+  return (
+    <input
+      autoFocus
+      value={title}
+      disabled={create.isPending}
+      onChange={(e) => setTitle(e.target.value)}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" && title.trim() && !create.isPending) {
+          create.mutate({ title: title.trim() });
+        }
+        if (e.key === "Escape") {
+          setOpen(false);
+          setTitle("");
+        }
+      }}
+      onBlur={() => {
+        if (!title.trim()) setOpen(false);
+      }}
+      placeholder="Video idea, Enter to add…"
+      className="shrink-0 rounded-xl border bg-card px-3 py-2.5 text-[13px] shadow-xs outline-none placeholder:text-muted-foreground focus:border-ring"
+    />
   );
 }
 

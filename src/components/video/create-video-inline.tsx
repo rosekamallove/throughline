@@ -65,7 +65,7 @@ export function CreateVideoInline() {
         onBlur={() => {
           if (!title.trim() && !create.isPending) close();
         }}
-        placeholder="Working title — Enter to create"
+        placeholder="Working title, Enter to create"
         className="h-9 w-72 rounded-full pl-9"
       />
     </div>

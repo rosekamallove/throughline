@@ -49,7 +49,7 @@ export async function getAccessToken(db: Db, userId: string): Promise<string> {
   });
   if (!res.ok) {
     throw new YouTubeNotConnectedError(
-      "Google token refresh failed — reconnect YouTube",
+      "Google token refresh failed. Reconnect YouTube",
     );
   }
   const data = (await res.json()) as { access_token: string; expires_in: number };
@@ -132,6 +132,7 @@ export interface YouTubeVideo {
   thumbnailUrl: string | null;
   views: number | null;
   durationSec: number;
+  privacy: "public" | "unlisted" | "private";
 }
 
 export function parseIsoDuration(iso: string): number {
@@ -155,10 +156,11 @@ export async function getVideos(token: string, ids: string[]): Promise<YouTubeVi
         };
         statistics?: { viewCount?: string };
         contentDetails: { duration: string };
+        status?: { privacyStatus?: string };
       }[];
     }>(
       token,
-      `${DATA_API}/videos?part=snippet,statistics,contentDetails&id=${chunk.join(",")}`,
+      `${DATA_API}/videos?part=snippet,statistics,contentDetails,status&id=${chunk.join(",")}`,
     );
     for (const item of data.items ?? []) {
       const thumbs = item.snippet.thumbnails ?? {};
@@ -170,6 +172,11 @@ export async function getVideos(token: string, ids: string[]): Promise<YouTubeVi
           thumbs.maxres?.url ?? thumbs.high?.url ?? thumbs.medium?.url ?? null,
         views: item.statistics?.viewCount ? Number(item.statistics.viewCount) : null,
         durationSec: parseIsoDuration(item.contentDetails.duration),
+        privacy:
+          item.status?.privacyStatus === "unlisted" ||
+          item.status?.privacyStatus === "private"
+            ? item.status.privacyStatus
+            : "public",
       });
     }
   }

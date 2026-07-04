@@ -34,6 +34,10 @@ export const videos = pgTable("videos", {
   stage: videoStage("stage").notNull().default("ideation"),
   source: videoSource("source").notNull().default("manual"),
   youtubeVideoId: text("youtube_video_id"),
+  /** YouTube privacyStatus; non-public videos stay out of the main feed. */
+  privacy: text("privacy", { enum: ["public", "unlisted", "private"] })
+    .notNull()
+    .default("public"),
   /** CSS-thumbnail packaging: saturated bg + Anton lines ("*token*" = yellow). */
   packagingColor: text("packaging_color"),
   thumbText: jsonb("thumb_text").$type<string[]>(),

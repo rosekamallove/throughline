@@ -27,7 +27,13 @@ export const auth = betterAuth({
   account: {
     // Lets Google sign-in attach to the seeded user row instead of failing
     // with account_not_linked (seed sets emailVerified: true).
-    accountLinking: { enabled: true, trustedProviders: ["google"] },
+    // allowDifferentEmails: the YouTube channel lives on a personal gmail,
+    // while the app login is the work address.
+    accountLinking: {
+      enabled: true,
+      trustedProviders: ["google"],
+      allowDifferentEmails: true,
+    },
   },
   databaseHooks: {
     user: {
