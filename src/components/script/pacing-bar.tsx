@@ -1,6 +1,6 @@
 "use client";
 
-import { BEAT_META } from "@/lib/beats";
+import { resolveBeatMeta, type CustomBeatKind } from "@/lib/beats";
 import type { Beat } from "@/trpc/types";
 
 export interface TimedBeat extends Beat {
@@ -10,10 +10,12 @@ export interface TimedBeat extends Beat {
 
 export function PacingBar({
   beats,
+  customKinds,
   activeId,
   onSelect,
 }: {
   beats: TimedBeat[];
+  customKinds: CustomBeatKind[];
   activeId: string | null;
   onSelect: (id: string) => void;
 }) {
@@ -26,10 +28,11 @@ export function PacingBar({
           key={b.id}
           title={b.label}
           onClick={() => onSelect(b.id)}
-          className={`${BEAT_META[b.kind].dot} min-w-1 transition-opacity`}
+          className="min-w-1 transition-opacity"
           style={{
             width: `${(b.sec / total) * 100}%`,
             opacity: b.id === activeId ? 1 : 0.38,
+            backgroundColor: resolveBeatMeta(b.kind, customKinds).color,
           }}
         />
       ))}

@@ -5,24 +5,26 @@ import { useState } from "react";
 
 import { PacingBar, type TimedBeat } from "@/components/script/pacing-bar";
 import { Checkbox } from "@/components/ui/checkbox";
-import { BEAT_META } from "@/lib/beats";
+import { resolveBeatMeta, type CustomBeatKind } from "@/lib/beats";
 import type { BrollItem } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 export function CoachPanel({
   beats,
+  customKinds,
   activeBeat,
   onSelectBeat,
   onSetBroll,
 }: {
   beats: TimedBeat[];
+  customKinds: CustomBeatKind[];
   activeBeat: TimedBeat | null;
   onSelectBeat: (id: string) => void;
   onSetBroll: (beatId: string, broll: BrollItem[]) => void;
 }) {
   const [newShot, setNewShot] = useState("");
   const total = beats.reduce((a, b) => a + b.sec, 0) || 1;
-  const meta = activeBeat ? BEAT_META[activeBeat.kind] : null;
+  const meta = activeBeat ? resolveBeatMeta(activeBeat.kind, customKinds) : null;
 
   function addShot() {
     if (!activeBeat || !newShot.trim()) return;
@@ -34,13 +36,20 @@ export function CoachPanel({
   }
 
   return (
-    <aside className="flex w-[318px] shrink-0 flex-col gap-6 overflow-y-auto border-l border-border p-5">
+    <aside className="flex w-[318px] shrink-0 flex-col gap-6 overflow-y-auto border-l p-5">
       <section>
         <p className="mono-label mb-3">Pacing</p>
-        <PacingBar beats={beats} activeId={activeBeat?.id ?? null} onSelect={onSelectBeat} />
-        {activeBeat && (
+        <PacingBar
+          beats={beats}
+          customKinds={customKinds}
+          activeId={activeBeat?.id ?? null}
+          onSelect={onSelectBeat}
+        />
+        {activeBeat && meta && (
           <p className="mt-2 text-[13px] text-muted-foreground">
-            <span className={cn("font-medium", meta?.text)}>{activeBeat.label}</span>{" "}
+            <span className="font-medium" style={meta.textStyle}>
+              {activeBeat.label}
+            </span>{" "}
             <span className="font-mono">
               · {Math.round((activeBeat.sec / total) * 100)}% of runtime
             </span>
@@ -49,8 +58,10 @@ export function CoachPanel({
       </section>
 
       {activeBeat && meta && (
-        <section className="rounded-xl border border-border bg-card p-4">
-          <p className={cn("mono-label mb-2", meta.text)}>Coach · {meta.label}</p>
+        <section className="rounded-xl border bg-card p-4">
+          <p className="mono-label mb-2" style={meta.textStyle}>
+            Coach · {meta.label}
+          </p>
           <p className="text-sm font-semibold">
             What a great {meta.label.toLowerCase()} does
           </p>

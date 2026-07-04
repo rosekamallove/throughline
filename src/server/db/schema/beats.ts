@@ -1,10 +1,43 @@
-import { index, integer, jsonb, pgEnum, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
+import { index, integer, jsonb, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
 
 import type { BeatTextVariant, BrollItem } from "@/lib/types";
 
+import { user } from "./auth";
 import { videos } from "./videos";
 
-export const beatKind = pgEnum("beat_kind", ["hook", "rehook", "body", "conclusion"]);
+export const beatKinds = pgTable(
+  "beat_kinds",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    color: text("color").notNull(),
+    guide: text("guide"),
+    position: integer("position").notNull().default(0),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("beat_kinds_user_id_idx").on(t.userId)],
+);
+
+export const scriptTemplates = pgTable(
+  "script_templates",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    description: text("description").notNull().default(""),
+    beats: jsonb("beats")
+      .$type<{ kind: string; label: string; guide?: string | null }[]>()
+      .notNull()
+      .default([]),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("script_templates_user_id_idx").on(t.userId)],
+);
 
 export const beats = pgTable(
   "beats",
@@ -13,7 +46,8 @@ export const beats = pgTable(
     videoId: uuid("video_id")
       .notNull()
       .references(() => videos.id, { onDelete: "cascade" }),
-    kind: beatKind("kind").notNull(),
+    /** Built-in key or beat_kinds uuid — text, not enum, so custom kinds need no migration. */
+    kind: text("kind").notNull(),
     label: text("label").notNull(),
     // Plain index — no unique constraint, so reorder can rewrite positions in one transaction.
     position: integer("position").notNull(),

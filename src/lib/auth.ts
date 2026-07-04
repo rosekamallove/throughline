@@ -10,6 +10,8 @@ const hasGoogle = !!(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_S
 
 export const auth = betterAuth({
   database: drizzleAdapter(db, { provider: "pg", schema }),
+  // Dev server sometimes runs on a non-default port; 403 "Invalid origin" otherwise.
+  trustedOrigins: ["http://localhost:3000", "http://localhost:3210"],
   emailAndPassword: { enabled: true },
   socialProviders: hasGoogle
     ? {

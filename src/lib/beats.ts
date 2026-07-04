@@ -1,60 +1,98 @@
+import type { CSSProperties } from "react";
+
 export const BEAT_KINDS = ["hook", "rehook", "body", "conclusion"] as const;
 
-export type BeatKind = (typeof BEAT_KINDS)[number];
+export type BuiltinBeatKind = (typeof BEAT_KINDS)[number];
+export type BeatKind = string;
 
-interface BeatKindMeta {
+export interface CustomBeatKind {
+  id: string;
+  name: string;
+  color: string;
+  guide: string | null;
+}
+
+/** Style objects, not classes — Tailwind can't statically extract user-chosen colors. */
+export interface ResolvedBeatMeta {
   label: string;
-  /** Literal class strings so Tailwind can statically extract them. */
-  dot: string;
-  text: string;
-  tag: string;
-  bar: string;
-  cssVar: string;
-  /** Default coach guidance for new beats; the beat's `guide` column overrides it. */
+  color: string;
+  dotStyle: CSSProperties;
+  tagStyle: CSSProperties;
+  barStyle: CSSProperties;
+  textStyle: CSSProperties;
   guide: string;
 }
 
-export const BEAT_META: Record<BeatKind, BeatKindMeta> = {
+const BUILTIN_META: Record<BuiltinBeatKind, { label: string; color: string; guide: string }> = {
   hook: {
     label: "Hook",
-    dot: "bg-beat-hook",
-    text: "text-beat-hook",
-    tag: "bg-beat-hook/20 text-beat-hook",
-    bar: "border-beat-hook",
-    cssVar: "var(--beat-hook)",
+    color: "var(--beat-hook)",
     guide: "One line. State the promise and the stakes.",
   },
   rehook: {
     label: "Re-hook",
-    dot: "bg-beat-rehook",
-    text: "text-beat-rehook",
-    tag: "bg-beat-rehook/20 text-beat-rehook",
-    bar: "border-beat-rehook",
-    cssVar: "var(--beat-rehook)",
+    color: "var(--beat-rehook)",
     guide: "Re-tease the payoff so nobody bails.",
   },
   body: {
     label: "Body",
-    dot: "bg-beat-body",
-    text: "text-beat-body",
-    tag: "bg-beat-body/20 text-beat-body",
-    bar: "border-beat-body",
-    cssVar: "var(--beat-body)",
+    color: "var(--beat-body)",
     guide: "Give value first. One idea per beat, shown on screen.",
   },
   conclusion: {
     label: "Conclusion",
-    dot: "bg-beat-conclusion",
-    text: "text-beat-conclusion",
-    tag: "bg-beat-conclusion/20 text-beat-conclusion",
-    bar: "border-beat-conclusion",
-    cssVar: "var(--beat-conclusion)",
+    color: "var(--beat-conclusion)",
     guide: "Honest reflection + a hook into the next video.",
   },
 };
 
-/** Skeleton instantiated when a video enters scripting (and on create). */
-export const DEFAULT_BEAT_SKELETON: { kind: BeatKind; label: string }[] = [
+function metaFrom(label: string, color: string, guide: string): ResolvedBeatMeta {
+  return {
+    label,
+    color,
+    dotStyle: { backgroundColor: color },
+    tagStyle: {
+      backgroundColor: `color-mix(in oklab, ${color} 16%, transparent)`,
+      color,
+    },
+    barStyle: { borderLeftColor: color },
+    textStyle: { color },
+    guide,
+  };
+}
+
+export function isBuiltinKind(kind: BeatKind): kind is BuiltinBeatKind {
+  return (BEAT_KINDS as readonly string[]).includes(kind);
+}
+
+export function resolveBeatMeta(
+  kind: BeatKind,
+  customKinds: CustomBeatKind[] = [],
+): ResolvedBeatMeta {
+  if (isBuiltinKind(kind)) {
+    const b = BUILTIN_META[kind];
+    return metaFrom(b.label, b.color, b.guide);
+  }
+  const custom = customKinds.find((c) => c.id === kind);
+  // A deleted custom kind falls back to Body so old beats keep rendering.
+  if (!custom) return metaFrom(BUILTIN_META.body.label, BUILTIN_META.body.color, BUILTIN_META.body.guide);
+  return metaFrom(custom.name, custom.color, custom.guide ?? BUILTIN_META.body.guide);
+}
+
+export const KIND_COLOR_CHOICES = [
+  "#E5674B",
+  "#E0A83B",
+  "#2C9C86",
+  "#7C6BD6",
+  "#3E86C9",
+  "#CE2E6C",
+  "#D99A00",
+  "#1E7D42",
+  "#9AA4B2",
+  "#E5484D",
+];
+
+export const DEFAULT_BEAT_SKELETON: { kind: BuiltinBeatKind; label: string }[] = [
   { kind: "hook", label: "Hook" },
   { kind: "body", label: "Context & Authority" },
   { kind: "rehook", label: "Re-hook" },

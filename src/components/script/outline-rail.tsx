@@ -17,7 +17,7 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { GripVertical, Plus } from "lucide-react";
+import { GripVertical, Plus, Settings2 } from "lucide-react";
 import Link from "next/link";
 
 import { StatTile } from "@/components/video/stat-tile";
@@ -27,9 +27,15 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { BEAT_KINDS, BEAT_META, type BeatKind } from "@/lib/beats";
+import {
+  BEAT_KINDS,
+  resolveBeatMeta,
+  type BeatKind,
+  type CustomBeatKind,
+} from "@/lib/beats";
 import { formatDuration } from "@/lib/runtime";
 import { STAGE_META } from "@/lib/stages";
 import { cn } from "@/lib/utils";
@@ -37,10 +43,12 @@ import type { VideoDetail } from "@/trpc/types";
 
 function OutlineRow({
   beat,
+  customKinds,
   active,
   onSelect,
 }: {
   beat: TimedBeat;
+  customKinds: CustomBeatKind[];
   active: boolean;
   onSelect: () => void;
 }) {
@@ -68,7 +76,10 @@ function OutlineRow({
         >
           <GripVertical className="size-3.5" />
         </span>
-        <span className={cn("size-2 shrink-0 rounded-full", BEAT_META[beat.kind].dot)} />
+        <span
+          className="size-2 shrink-0 rounded-full"
+          style={resolveBeatMeta(beat.kind, customKinds).dotStyle}
+        />
         <span className="min-w-0 flex-1 truncate">{beat.label}</span>
         <span className="font-mono text-[11px] text-muted-foreground">{formatDuration(beat.sec)}</span>
       </button>
@@ -79,21 +90,25 @@ function OutlineRow({
 export function OutlineRail({
   video,
   beats,
+  customKinds,
   activeId,
   totalWords,
   totalSec,
   onSelect,
   onReorder,
   onAddBeat,
+  onCustomize,
 }: {
   video: VideoDetail;
   beats: TimedBeat[];
+  customKinds: CustomBeatKind[];
   activeId: string | null;
   totalWords: number;
   totalSec: number;
   onSelect: (id: string) => void;
   onReorder: (orderedIds: string[]) => void;
   onAddBeat: (kind: BeatKind) => void;
+  onCustomize: () => void;
 }) {
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
@@ -142,6 +157,7 @@ export function OutlineRail({
                 <OutlineRow
                   key={b.id}
                   beat={b}
+                  customKinds={customKinds}
                   active={b.id === activeId}
                   onSelect={() => onSelect(b.id)}
                 />
@@ -155,12 +171,25 @@ export function OutlineRail({
             <Plus className="size-4" /> Add beat
           </DropdownMenuTrigger>
           <DropdownMenuContent align="start">
-            {BEAT_KINDS.map((kind) => (
-              <DropdownMenuItem key={kind} onClick={() => onAddBeat(kind)}>
-                <span className={cn("size-2 rounded-full", BEAT_META[kind].dot)} />
-                {BEAT_META[kind].label}
+            {BEAT_KINDS.map((kind) => {
+              const meta = resolveBeatMeta(kind);
+              return (
+                <DropdownMenuItem key={kind} onClick={() => onAddBeat(kind)}>
+                  <span className="size-2 rounded-full" style={meta.dotStyle} />
+                  {meta.label}
+                </DropdownMenuItem>
+              );
+            })}
+            {customKinds.map((kind) => (
+              <DropdownMenuItem key={kind.id} onClick={() => onAddBeat(kind.id)}>
+                <span className="size-2 rounded-full" style={{ backgroundColor: kind.color }} />
+                {kind.name}
               </DropdownMenuItem>
             ))}
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={onCustomize}>
+              <Settings2 className="size-4" /> Customize kinds…
+            </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>

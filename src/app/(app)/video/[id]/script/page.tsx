@@ -10,12 +10,13 @@ import { toast } from "sonner";
 import { BeatBlock } from "@/components/script/beat-block";
 import { CoachPanel } from "@/components/script/coach-panel";
 import { ListenButton } from "@/components/script/listen-button";
+import { ManageKindsDialog } from "@/components/script/manage-kinds-dialog";
 import { OutlineRail } from "@/components/script/outline-rail";
 import type { TimedBeat } from "@/components/script/pacing-bar";
 import { ResearchPanel } from "@/components/script/research-panel";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { BEAT_META, type BeatKind } from "@/lib/beats";
+import { resolveBeatMeta, type BeatKind } from "@/lib/beats";
 import { countWords, formatDuration, wordsToSeconds } from "@/lib/runtime";
 import type { BrollItem } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -30,7 +31,9 @@ export default function ScriptEditorPage({ params }: { params: Promise<{ id: str
 
   const { data: video } = useQuery(trpc.video.byId.queryOptions({ id: videoId }));
   const { data: beats } = useQuery(trpc.beat.listByVideo.queryOptions({ videoId }));
+  const { data: customKinds = [] } = useQuery(trpc.beat.kinds.queryOptions());
   const beatsKey = trpc.beat.listByVideo.queryKey({ videoId });
+  const [kindsOpen, setKindsOpen] = useState(false);
 
   // null falls back to the first beat once data loads.
   const [selectedId, setActiveId] = useState<string | null>(null);
@@ -252,6 +255,7 @@ export default function ScriptEditorPage({ params }: { params: Promise<{ id: str
         <OutlineRail
           video={video}
           beats={timed}
+          customKinds={customKinds}
           activeId={activeId}
           totalWords={totalWords}
           totalSec={totalSec}
@@ -261,10 +265,11 @@ export default function ScriptEditorPage({ params }: { params: Promise<{ id: str
             createBeat.mutate({
               videoId,
               kind,
-              label: BEAT_META[kind].label,
+              label: resolveBeatMeta(kind, customKinds).label,
               afterPosition: activeBeat?.position ?? timed.length - 1,
             })
           }
+          onCustomize={() => setKindsOpen(true)}
         />
 
         <main className="min-w-0 flex-1 overflow-y-auto">
@@ -280,6 +285,7 @@ export default function ScriptEditorPage({ params }: { params: Promise<{ id: str
                 <BeatBlock
                   key={`${beat.id}:${beat.activeVariantId ?? "base"}`}
                   beat={beat}
+                  customKinds={customKinds}
                   active={beat.id === activeId}
                   onActivate={() => setActiveId(beat.id)}
                   onChangeContent={({ value, text }) =>
@@ -318,6 +324,7 @@ export default function ScriptEditorPage({ params }: { params: Promise<{ id: str
 
         <CoachPanel
           beats={timed}
+          customKinds={customKinds}
           activeBeat={activeBeat}
           onSelectBeat={setActiveId}
           onSetBroll={(beatId: string, broll: BrollItem[]) =>
@@ -327,6 +334,7 @@ export default function ScriptEditorPage({ params }: { params: Promise<{ id: str
       </div>
 
       <ResearchPanel videoId={videoId} />
+      <ManageKindsDialog open={kindsOpen} onOpenChange={setKindsOpen} customKinds={customKinds} />
     </div>
   );
 }

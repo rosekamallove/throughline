@@ -13,14 +13,19 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { BEAT_KINDS, BEAT_META } from "@/lib/beats";
-import type { BeatKind } from "@/lib/beats";
+import {
+  BEAT_KINDS,
+  resolveBeatMeta,
+  type BeatKind,
+  type CustomBeatKind,
+} from "@/lib/beats";
 import { textToValue } from "@/lib/plate";
 import { formatDuration } from "@/lib/runtime";
 import { cn } from "@/lib/utils";
 
 export function BeatBlock({
   beat,
+  customKinds,
   active,
   onActivate,
   onChangeContent,
@@ -33,6 +38,7 @@ export function BeatBlock({
   onDeleteVariant,
 }: {
   beat: TimedBeat;
+  customKinds: CustomBeatKind[];
   active: boolean;
   onActivate: () => void;
   onChangeContent: (payload: { value: Value; text: string }) => void;
@@ -44,7 +50,7 @@ export function BeatBlock({
   onSwitchVariant: (variantId: string) => void;
   onDeleteVariant: (variantId: string) => void;
 }) {
-  const meta = BEAT_META[beat.kind];
+  const meta = resolveBeatMeta(beat.kind, customKinds);
   const [label, setLabel] = useState(beat.label);
   // Initial value only — the Plate editor owns its state after mount. The
   // parent re-keys this block on variant switches to remount with new text.
@@ -53,21 +59,30 @@ export function BeatBlock({
   );
   const activeVariant = beat.variants.find((v) => v.id === beat.activeVariantId);
 
+  const otherKinds = [
+    ...BEAT_KINDS.filter((k) => k !== beat.kind).map((k) => ({
+      key: k as BeatKind,
+      meta: resolveBeatMeta(k),
+    })),
+    ...customKinds
+      .filter((c) => c.id !== beat.kind)
+      .map((c) => ({ key: c.id, meta: resolveBeatMeta(c.id, customKinds) })),
+  ];
+
   return (
     <section
       onFocusCapture={onActivate}
       onClick={onActivate}
       className={cn(
         "group rounded-r-xl border-l-[3px] py-3 pl-5 pr-3 transition-colors",
-        active ? cn("bg-muted", meta.bar) : "border-transparent",
+        active && "bg-muted",
       )}
+      style={{ borderLeftColor: active ? meta.color : "transparent" }}
     >
       <div className="mb-1.5 flex items-center gap-2.5">
         <span
-          className={cn(
-            "rounded-md px-2 py-0.5 font-mono text-[10px] font-semibold uppercase tracking-[1.5px]",
-            meta.tag,
-          )}
+          className="rounded-md px-2 py-0.5 font-mono text-[10px] font-semibold uppercase tracking-[1.5px]"
+          style={meta.tagStyle}
         >
           {meta.label}
         </span>
@@ -121,10 +136,10 @@ export function BeatBlock({
               </DropdownMenuItem>
             )}
             <DropdownMenuSeparator />
-            {BEAT_KINDS.filter((k) => k !== beat.kind).map((kind) => (
-              <DropdownMenuItem key={kind} onClick={() => onChangeKind(kind)}>
-                <span className={cn("size-2 rounded-full", BEAT_META[kind].dot)} />
-                Make {BEAT_META[kind].label}
+            {otherKinds.map(({ key, meta: kindMeta }) => (
+              <DropdownMenuItem key={key} onClick={() => onChangeKind(key)}>
+                <span className="size-2 rounded-full" style={kindMeta.dotStyle} />
+                Make {kindMeta.label}
               </DropdownMenuItem>
             ))}
             <DropdownMenuSeparator />

@@ -220,8 +220,11 @@ export default function VideoDetailPage({ params }: { params: Promise<{ id: stri
                   <ChevronDown className="size-4" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="start">
-                <DropdownMenuItem onClick={() => setTemplatesOpen(true)}>
+              <DropdownMenuContent align="start" className="min-w-[230px]">
+                <DropdownMenuItem
+                  onClick={() => setTemplatesOpen(true)}
+                  className="whitespace-nowrap"
+                >
                   <LayoutTemplate className="size-4" /> Start from a template…
                 </DropdownMenuItem>
               </DropdownMenuContent>
@@ -257,6 +260,7 @@ export default function VideoDetailPage({ params }: { params: Promise<{ id: stri
       <TemplateGalleryDialog
         open={templatesOpen}
         onOpenChange={setTemplatesOpen}
+        videoId={id}
         scriptHasContent={scriptHasContent}
         onApply={(templateId) => applyTemplate.mutate({ videoId: id, templateId })}
       />

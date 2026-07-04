@@ -177,6 +177,30 @@
   html {
     @apply font-sans;
   }
+
+  /* Slim pill scrollbars on a transparent track — the native bar reads as a
+     heavy gray slab under the kanban board. border + background-clip float
+     the thumb off the edges; color-mix keeps it theme-aware. (webkit pseudos
+     only — setting scrollbar-width/color would disable them in Blink.) */
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    border: 3px solid transparent;
+    border-radius: 9999px;
+    background-color: color-mix(in oklab, var(--muted-foreground) 35%, transparent);
+    background-clip: content-box;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background-color: color-mix(in oklab, var(--muted-foreground) 60%, transparent);
+  }
+  ::-webkit-scrollbar-corner {
+    background: transparent;
+  }
 }
 
 @layer utilities {

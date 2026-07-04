@@ -2,14 +2,23 @@ import { TRPCError } from "@trpc/server";
 import { and, asc, eq } from "drizzle-orm";
 import { z } from "zod";
 
-import { BEAT_KINDS } from "@/lib/beats";
-import { SCRIPT_TEMPLATES } from "@/lib/templates";
+import { isBuiltinKind } from "@/lib/beats";
+import { SCRIPT_TEMPLATES, type TemplateBeat } from "@/lib/templates";
 import { brollItemSchema, type BeatTextVariant } from "@/lib/types";
-import { beats, videos } from "@/server/db/schema";
+import { beatKinds, beats, scriptTemplates, videos } from "@/server/db/schema";
 
 import { createTRPCRouter, protectedProcedure } from "../trpc";
 
 type Ctx = Parameters<Parameters<typeof protectedProcedure.query>[0]>[0]["ctx"];
+
+async function assertKindValid(ctx: Ctx, kind: string) {
+  if (isBuiltinKind(kind)) return;
+  const custom = await ctx.db.query.beatKinds.findFirst({
+    where: and(eq(beatKinds.id, kind), eq(beatKinds.userId, ctx.session.user.id)),
+    columns: { id: true },
+  });
+  if (!custom) throw new TRPCError({ code: "BAD_REQUEST", message: "Unknown beat kind" });
+}
 
 async function assertVideoOwned(ctx: Ctx, videoId: string) {
   const video = await ctx.db.query.videos.findFirst({
@@ -31,6 +40,71 @@ async function assertBeatOwned(ctx: Ctx, beatId: string) {
 }
 
 export const beatRouter = createTRPCRouter({
+  kinds: protectedProcedure.query(({ ctx }) =>
+    ctx.db.query.beatKinds.findMany({
+      where: eq(beatKinds.userId, ctx.session.user.id),
+      orderBy: [asc(beatKinds.position)],
+    }),
+  ),
+
+  kindCreate: protectedProcedure
+    .input(
+      z.object({
+        name: z.string().min(1).max(40),
+        color: z.string().regex(/^#[0-9a-fA-F]{6}$/),
+        guide: z.string().max(500).optional(),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const siblings = await ctx.db.query.beatKinds.findMany({
+        where: eq(beatKinds.userId, ctx.session.user.id),
+        columns: { position: true },
+      });
+      const position = siblings.length
+        ? Math.max(...siblings.map((s) => s.position)) + 1
+        : 0;
+      const [created] = await ctx.db
+        .insert(beatKinds)
+        .values({ ...input, userId: ctx.session.user.id, position })
+        .returning();
+      return created;
+    }),
+
+  kindUpdate: protectedProcedure
+    .input(
+      z.object({
+        id: z.uuid(),
+        name: z.string().min(1).max(40).optional(),
+        color: z.string().regex(/^#[0-9a-fA-F]{6}$/).optional(),
+        guide: z.string().max(500).nullable().optional(),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const { id, ...fields } = input;
+      const [updated] = await ctx.db
+        .update(beatKinds)
+        .set(fields)
+        .where(and(eq(beatKinds.id, id), eq(beatKinds.userId, ctx.session.user.id)))
+        .returning();
+      if (!updated) throw new TRPCError({ code: "NOT_FOUND" });
+      return updated;
+    }),
+
+  kindDelete: protectedProcedure
+    .input(z.object({ id: z.uuid() }))
+    .mutation(async ({ ctx, input }) => {
+      return ctx.db.transaction(async (tx) => {
+        const [deleted] = await tx
+          .delete(beatKinds)
+          .where(and(eq(beatKinds.id, input.id), eq(beatKinds.userId, ctx.session.user.id)))
+          .returning();
+        if (!deleted) throw new TRPCError({ code: "NOT_FOUND" });
+        // Orphaned beats fall back to the Body built-in.
+        await tx.update(beats).set({ kind: "body" }).where(eq(beats.kind, input.id));
+        return { id: input.id };
+      });
+    }),
+
   listByVideo: protectedProcedure
     .input(z.object({ videoId: z.uuid() }))
     .query(async ({ ctx, input }) => {
@@ -45,13 +119,14 @@ export const beatRouter = createTRPCRouter({
     .input(
       z.object({
         videoId: z.uuid(),
-        kind: z.enum(BEAT_KINDS),
+        kind: z.string().min(1).max(64),
         label: z.string().min(1).max(120),
         afterPosition: z.number().int().min(-1),
       }),
     )
     .mutation(async ({ ctx, input }) => {
       await assertVideoOwned(ctx, input.videoId);
+      await assertKindValid(ctx, input.kind);
       return ctx.db.transaction(async (tx) => {
         const existing = await tx.query.beats.findMany({
           where: eq(beats.videoId, input.videoId),
@@ -115,12 +190,13 @@ export const beatRouter = createTRPCRouter({
       z.object({
         id: z.uuid(),
         label: z.string().min(1).max(120).optional(),
-        kind: z.enum(BEAT_KINDS).optional(),
+        kind: z.string().min(1).max(64).optional(),
         guide: z.string().max(500).nullable().optional(),
       }),
     )
     .mutation(async ({ ctx, input }) => {
       await assertBeatOwned(ctx, input.id);
+      if (input.kind) await assertKindValid(ctx, input.kind);
       const { id, ...fields } = input;
       const [updated] = await ctx.db
         .update(beats)
@@ -239,22 +315,92 @@ export const beatRouter = createTRPCRouter({
       return updated;
     }),
 
+  templates: protectedProcedure.query(({ ctx }) =>
+    ctx.db.query.scriptTemplates.findMany({
+      where: eq(scriptTemplates.userId, ctx.session.user.id),
+      orderBy: [asc(scriptTemplates.createdAt)],
+    }),
+  ),
+
+  /** Snapshot a video's beat structure (kinds/labels/guides, not text). */
+  templateSave: protectedProcedure
+    .input(
+      z.object({
+        videoId: z.uuid(),
+        name: z.string().min(1).max(80),
+        description: z.string().max(200).optional(),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      await assertVideoOwned(ctx, input.videoId);
+      const rows = await ctx.db.query.beats.findMany({
+        where: eq(beats.videoId, input.videoId),
+        orderBy: [asc(beats.position)],
+        columns: { kind: true, label: true, guide: true },
+      });
+      if (!rows.length) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "This script has no beats yet" });
+      }
+      const [created] = await ctx.db
+        .insert(scriptTemplates)
+        .values({
+          userId: ctx.session.user.id,
+          name: input.name,
+          description: input.description ?? "",
+          beats: rows,
+        })
+        .returning();
+      return created;
+    }),
+
+  templateDelete: protectedProcedure
+    .input(z.object({ id: z.uuid() }))
+    .mutation(async ({ ctx, input }) => {
+      const [deleted] = await ctx.db
+        .delete(scriptTemplates)
+        .where(
+          and(eq(scriptTemplates.id, input.id), eq(scriptTemplates.userId, ctx.session.user.id)),
+        )
+        .returning();
+      if (!deleted) throw new TRPCError({ code: "NOT_FOUND" });
+      return { id: input.id };
+    }),
+
   /** Replace the video's beats with a template's structure. Destructive —
    *  the client confirms first when the current script has content. */
   applyTemplate: protectedProcedure
     .input(z.object({ videoId: z.uuid(), templateId: z.string() }))
     .mutation(async ({ ctx, input }) => {
       await assertVideoOwned(ctx, input.videoId);
-      const template = SCRIPT_TEMPLATES.find((t) => t.id === input.templateId);
-      if (!template) throw new TRPCError({ code: "NOT_FOUND", message: "Unknown template" });
+      let templateBeats: TemplateBeat[] | undefined = SCRIPT_TEMPLATES.find(
+        (t) => t.id === input.templateId,
+      )?.beats;
+      if (!templateBeats) {
+        const custom = await ctx.db.query.scriptTemplates.findFirst({
+          where: and(
+            eq(scriptTemplates.id, input.templateId),
+            eq(scriptTemplates.userId, ctx.session.user.id),
+          ),
+        });
+        templateBeats = custom?.beats.map((b) => ({ ...b, guide: b.guide ?? undefined }));
+      }
+      if (!templateBeats) throw new TRPCError({ code: "NOT_FOUND", message: "Unknown template" });
+
+      // Custom kinds may have been deleted since the template was saved.
+      const knownKinds = await ctx.db.query.beatKinds.findMany({
+        where: eq(beatKinds.userId, ctx.session.user.id),
+        columns: { id: true },
+      });
+      const known = new Set(knownKinds.map((k) => k.id));
+
       return ctx.db.transaction(async (tx) => {
         await tx.delete(beats).where(eq(beats.videoId, input.videoId));
         const created = await tx
           .insert(beats)
           .values(
-            template.beats.map((b, i) => ({
+            templateBeats.map((b, i) => ({
               videoId: input.videoId,
-              kind: b.kind,
+              kind: isBuiltinKind(b.kind) || known.has(b.kind) ? b.kind : "body",
               label: b.label,
               guide: b.guide ?? null,
               position: i,
