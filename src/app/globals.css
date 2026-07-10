@@ -246,4 +246,18 @@
   .shot-mark-hot {
     background: color-mix(in oklab, var(--thumb-accent) 32%, transparent);
   }
+
+  /* A passage with a review comment. Always faintly highlighted (unlike the
+     quiet shot marks) so notes are visible while reading; brighter when the
+     matching row in the comments list is hovered (.comment-mark-hot). */
+  .comment-mark {
+    border-radius: 3px;
+    background: color-mix(in oklab, #f5c518 18%, transparent);
+    box-shadow: inset 0 -1.5px 0 color-mix(in oklab, #f5c518 65%, transparent);
+    transition: background-color 150ms ease;
+    cursor: pointer;
+  }
+  .comment-mark-hot {
+    background: color-mix(in oklab, #f5c518 40%, transparent);
+  }
 }

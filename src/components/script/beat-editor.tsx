@@ -1,10 +1,11 @@
 "use client";
 
-import { BoldIcon, Clapperboard, ItalicIcon, UnderlineIcon } from "lucide-react";
+import { BoldIcon, Clapperboard, ItalicIcon, MessageSquarePlus, UnderlineIcon } from "lucide-react";
 import { KEYS, NodeApi, type Value } from "platejs";
 import { Plate, useEditorRef, usePlateEditor } from "platejs/react";
 
 import { BasicNodesKit } from "@/components/editor/plugins/basic-nodes-kit";
+import { CommentKit } from "@/components/editor/plugins/comment-kit";
 import { ListKit } from "@/components/editor/plugins/list-kit";
 import { ShotKit } from "@/components/editor/plugins/shot-kit";
 import { SlashKit } from "@/components/editor/plugins/slash-kit";
@@ -43,6 +44,35 @@ function AddShotButton({
   );
 }
 
+function AddCommentButton({
+  onAddComment,
+}: {
+  onAddComment?: (text: string, commentId: string) => void;
+}) {
+  const editor = useEditorRef();
+  if (!onAddComment) return null;
+  return (
+    <ToolbarButton
+      tooltip="Comment on this passage"
+      onClick={() => {
+        const selected = editor.selection
+          ? editor.api.string(editor.selection).trim()
+          : "";
+        if (!selected) return;
+        const commentId = crypto.randomUUID();
+        // Highlight the passage, then drop the pending mark so typing at the
+        // edge doesn't extend it (same trick as shots).
+        editor.tf.addMark("comment", commentId);
+        editor.tf.collapse({ edge: "end" });
+        editor.tf.removeMark("comment");
+        onAddComment(selected, commentId);
+      }}
+    >
+      <MessageSquarePlus /> Comment
+    </ToolbarButton>
+  );
+}
+
 /** Per-beat Plate editor. Uncontrolled after mount — local editor state is
  *  the source of truth while typing; changes flow up for stats + autosave. */
 export function BeatEditor({
@@ -50,14 +80,16 @@ export function BeatEditor({
   placeholder,
   onChange,
   onAddShot,
+  onAddComment,
 }: {
   initialValue: Value;
   placeholder?: string;
   onChange: (payload: { value: Value; text: string }) => void;
   onAddShot?: (text: string, shotId: string) => void;
+  onAddComment?: (text: string, commentId: string) => void;
 }) {
   const editor = usePlateEditor({
-    plugins: [...BasicNodesKit, ...ListKit, ...TableKit, ...SlashKit, ...ShotKit],
+    plugins: [...BasicNodesKit, ...ListKit, ...TableKit, ...SlashKit, ...ShotKit, ...CommentKit],
     value: initialValue,
   });
 
@@ -88,6 +120,7 @@ export function BeatEditor({
             <UnderlineIcon />
           </MarkToolbarButton>
           <AddShotButton onAddShot={onAddShot} />
+          <AddCommentButton onAddComment={onAddComment} />
         </FloatingToolbar>
       </EditorContainer>
     </Plate>

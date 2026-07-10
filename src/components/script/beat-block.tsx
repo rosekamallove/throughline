@@ -33,6 +33,7 @@ export function BeatBlock({
   onChangeKind,
   onDelete,
   onAddShot,
+  onAddComment,
   onAddVariant,
   onSwitchVariant,
   onDeleteVariant,
@@ -48,6 +49,7 @@ export function BeatBlock({
   onChangeKind: (kind: BeatKind) => void;
   onDelete: () => void;
   onAddShot: (text: string, shotId: string) => void;
+  onAddComment: (text: string, commentId: string) => void;
   onAddVariant: () => void;
   onSwitchVariant: (variantId: string) => void;
   onDeleteVariant: (variantId: string) => void;
@@ -173,6 +175,7 @@ export function BeatBlock({
         placeholder="Write this beat…"
         onChange={onChangeContent}
         onAddShot={onAddShot}
+        onAddComment={onAddComment}
       />
     </section>
   );

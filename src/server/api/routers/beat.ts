@@ -4,7 +4,7 @@ import { z } from "zod";
 
 import { isBuiltinKind } from "@/lib/beats";
 import { SCRIPT_TEMPLATES, type TemplateBeat } from "@/lib/templates";
-import { brollItemSchema, type BeatTextVariant } from "@/lib/types";
+import { brollItemSchema, commentItemSchema, type BeatTextVariant } from "@/lib/types";
 import { beatKinds, beats, scriptTemplates, videos } from "@/server/db/schema";
 
 import { createTRPCRouter, protectedProcedure } from "../trpc";
@@ -213,6 +213,18 @@ export const beatRouter = createTRPCRouter({
       const [updated] = await ctx.db
         .update(beats)
         .set({ broll: input.broll, updatedAt: new Date() })
+        .where(eq(beats.id, input.id))
+        .returning();
+      return updated;
+    }),
+
+  setComments: protectedProcedure
+    .input(z.object({ id: z.uuid(), comments: z.array(commentItemSchema).max(100) }))
+    .mutation(async ({ ctx, input }) => {
+      await assertBeatOwned(ctx, input.id);
+      const [updated] = await ctx.db
+        .update(beats)
+        .set({ comments: input.comments, updatedAt: new Date() })
         .where(eq(beats.id, input.id))
         .returning();
       return updated;

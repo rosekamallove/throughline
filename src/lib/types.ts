@@ -11,6 +11,17 @@ export const brollItemSchema = z.object({
 });
 export type BrollItem = z.infer<typeof brollItemSchema>;
 
+/** Shape of the `beats.comments` jsonb column. A review note anchored to a
+ *  passage: `body` is the note, `quote` the excerpt it hangs off (the id also
+ *  marks those words in the beat content), `resolved` hides the highlight. */
+export const commentItemSchema = z.object({
+  id: z.string(),
+  body: z.string(),
+  quote: z.string().optional(),
+  resolved: z.boolean(),
+});
+export type CommentItem = z.infer<typeof commentItemSchema>;
+
 /** Shape of the `thumbText` jsonb columns: one string per line, `*token*` = highlight. */
 export const thumbTextSchema = z.array(z.string()).max(4);
 export type ThumbText = z.infer<typeof thumbTextSchema>;

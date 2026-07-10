@@ -20,7 +20,13 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { resolveBeatMeta, type BeatKind } from "@/lib/beats";
 import { RAIL_LIMITS, useEditorPrefs } from "@/lib/editor-prefs";
-import { hasShotMark, shotMarkIds, stripShotMark } from "@/lib/plate";
+import {
+  commentMarkIds,
+  hasShotMark,
+  shotMarkIds,
+  stripCommentMark,
+  stripShotMark,
+} from "@/lib/plate";
 import { countWords, formatDuration, wordsToSeconds } from "@/lib/runtime";
 import {
   loadPreferredVoiceURI,
@@ -30,7 +36,7 @@ import {
   stopSpeech,
   useVoices,
 } from "@/lib/tts";
-import type { BrollItem } from "@/lib/types";
+import type { BrollItem, CommentItem } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { useTRPC } from "@/trpc/client";
 
@@ -50,6 +56,7 @@ export default function ScriptEditorPage({ params }: { params: Promise<{ id: str
   // deleted shot's mark is stripped) so the uncontrolled editor remounts.
   const [contentRevs, setContentRevs] = useState<Record<string, number>>({});
   const [focusShotId, setFocusShotId] = useState<string | null>(null);
+  const [focusCommentId, setFocusCommentId] = useState<string | null>(null);
   const [rails, setRails] = useEditorPrefs();
   const [prompterOpen, setPrompterOpen] = useState(false);
 
@@ -185,6 +192,23 @@ export default function ScriptEditorPage({ params }: { params: Promise<{ id: str
     }),
   );
 
+  const setComments = useMutation(
+    trpc.beat.setComments.mutationOptions({
+      onMutate: async ({ id, comments }) => {
+        await queryClient.cancelQueries({ queryKey: beatsKey });
+        const prev = queryClient.getQueryData(beatsKey);
+        queryClient.setQueryData(beatsKey, (old) =>
+          old?.map((b) => (b.id === id ? { ...b, comments } : b)),
+        );
+        return { prev };
+      },
+      onError: (e, _input, ctx) => {
+        if (ctx?.prev) queryClient.setQueryData(beatsKey, ctx.prev);
+        toast.error(e.message);
+      },
+    }),
+  );
+
   const updateBeat = useMutation(
     trpc.beat.update.mutationOptions({
       onSuccess: (updated) => {
@@ -304,6 +328,34 @@ export default function ScriptEditorPage({ params }: { params: Promise<{ id: str
     setContentRevs((r) => ({ ...r, [beatId]: (r[beatId] ?? 0) + 1 }));
   }
 
+  // Deleting a comment also strips its highlight from the beat's prose, mirroring
+  // removeShot: patch the cache first so the remounted editor drops the mark.
+  function removeComment(beatId: string, commentId: string) {
+    const beat = timed.find((b) => b.id === beatId);
+    if (!beat) return;
+    setComments.mutate({
+      id: beatId,
+      comments: beat.comments.filter((c) => c.id !== commentId),
+    });
+
+    const latest = (contentDrafts.current[beatId] ??
+      beats?.find((b) => b.id === beatId)?.content) as Value | null;
+    if (!latest || !commentMarkIds(latest).includes(commentId)) return;
+    clearTimeout(timers.current[beatId]);
+    delete timers.current[beatId];
+    const stripped = stripCommentMark(latest, commentId);
+    const text = drafts[beatId] ?? beat.text;
+    contentDrafts.current[beatId] = stripped;
+    queryClient.setQueryData(beatsKey, (old) =>
+      old?.map((b) => (b.id === beatId ? { ...b, text, content: stripped } : b)),
+    );
+    updateText.mutate(
+      { id: beatId, text, content: stripped },
+      { onError: (e) => toast.error(e.message) },
+    );
+    setContentRevs((r) => ({ ...r, [beatId]: (r[beatId] ?? 0) + 1 }));
+  }
+
   // Self-heal orphaned shot marks: a mark whose shot row is gone (a lost
   // broll write, or a variant snapshot resurrecting deleted shots) would
   // otherwise highlight forever with nothing in the list. Beats with a
@@ -317,10 +369,13 @@ export default function ScriptEditorPage({ params }: { params: Promise<{ id: str
         if (timers.current[beat.id] || draftsRef.current[beat.id] != null) continue;
         const content = beat.content as Value | null;
         if (!content) continue;
-        const known = new Set(beat.broll.map((s) => s.id));
-        const orphans = shotMarkIds(content).filter((id) => !known.has(id));
-        if (orphans.length === 0) continue;
-        const stripped = orphans.reduce((v, id) => stripShotMark(v, id), content);
+        const knownShots = new Set(beat.broll.map((s) => s.id));
+        const knownComments = new Set(beat.comments.map((c) => c.id));
+        const shotOrphans = shotMarkIds(content).filter((id) => !knownShots.has(id));
+        const commentOrphans = commentMarkIds(content).filter((id) => !knownComments.has(id));
+        if (shotOrphans.length === 0 && commentOrphans.length === 0) continue;
+        let stripped = shotOrphans.reduce((v, id) => stripShotMark(v, id), content);
+        stripped = commentOrphans.reduce((v, id) => stripCommentMark(v, id), stripped);
         queryClient.setQueryData(beatsKey, (old) =>
           old?.map((b) => (b.id === beat.id ? { ...b, content: stripped } : b)),
         );
@@ -476,6 +531,16 @@ export default function ScriptEditorPage({ params }: { params: Promise<{ id: str
                     });
                     setFocusShotId(shotId);
                   }}
+                  onAddComment={(quote, commentId) => {
+                    setComments.mutate({
+                      id: beat.id,
+                      comments: [
+                        ...beat.comments,
+                        { id: commentId, body: "", quote: quote.slice(0, 140), resolved: false },
+                      ],
+                    });
+                    setFocusCommentId(commentId);
+                  }}
                   onAddVariant={() => {
                     flushDraft(beat.id);
                     addVariant.mutate({ id: beat.id });
@@ -513,8 +578,14 @@ export default function ScriptEditorPage({ params }: { params: Promise<{ id: str
               setBroll.mutate({ id: beatId, broll })
             }
             onRemoveShot={removeShot}
+            onSetComments={(beatId: string, comments: CommentItem[]) =>
+              setComments.mutate({ id: beatId, comments })
+            }
+            onRemoveComment={removeComment}
             focusShotId={focusShotId}
             onFocusShotHandled={() => setFocusShotId(null)}
+            focusCommentId={focusCommentId}
+            onFocusCommentHandled={() => setFocusCommentId(null)}
           >
             <ResearchRail videoId={videoId} />
           </CoachPanel>
