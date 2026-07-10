@@ -7,6 +7,7 @@ import { Plate, usePlateEditor } from "platejs/react";
 import { BasicNodesKit } from "@/components/editor/plugins/basic-nodes-kit";
 import { ListKit } from "@/components/editor/plugins/list-kit";
 import { SlashKit } from "@/components/editor/plugins/slash-kit";
+import { TableKit } from "@/components/editor/plugins/table-kit";
 import { Editor, EditorContainer } from "@/components/ui/editor";
 import { FloatingToolbar } from "@/components/ui/floating-toolbar";
 import { MarkToolbarButton } from "@/components/ui/mark-toolbar-button";
@@ -27,7 +28,7 @@ export function DocEditor({
   onChange: (value: Value) => void;
 }) {
   const editor = usePlateEditor({
-    plugins: [...BasicNodesKit, ...ListKit, ...SlashKit],
+    plugins: [...BasicNodesKit, ...ListKit, ...TableKit, ...SlashKit],
     value: initialValue,
   });
 

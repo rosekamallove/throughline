@@ -8,6 +8,7 @@ import { BasicNodesKit } from "@/components/editor/plugins/basic-nodes-kit";
 import { ListKit } from "@/components/editor/plugins/list-kit";
 import { ShotKit } from "@/components/editor/plugins/shot-kit";
 import { SlashKit } from "@/components/editor/plugins/slash-kit";
+import { TableKit } from "@/components/editor/plugins/table-kit";
 import { Editor, EditorContainer } from "@/components/ui/editor";
 import { FloatingToolbar } from "@/components/ui/floating-toolbar";
 import { MarkToolbarButton } from "@/components/ui/mark-toolbar-button";
@@ -56,7 +57,7 @@ export function BeatEditor({
   onAddShot?: (text: string, shotId: string) => void;
 }) {
   const editor = usePlateEditor({
-    plugins: [...BasicNodesKit, ...ListKit, ...SlashKit, ...ShotKit],
+    plugins: [...BasicNodesKit, ...ListKit, ...TableKit, ...SlashKit, ...ShotKit],
     value: initialValue,
   });
 

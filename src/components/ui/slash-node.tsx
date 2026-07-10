@@ -4,6 +4,7 @@ import * as React from "react";
 
 import type { PlateEditor, PlateElementProps } from "platejs/react";
 
+import { insertTable } from "@platejs/table";
 import {
   Heading1Icon,
   Heading2Icon,
@@ -14,6 +15,7 @@ import {
   PilcrowIcon,
   Quote,
   Square,
+  Table2Icon,
 } from "lucide-react";
 import { type TComboboxInputElement, KEYS } from "platejs";
 import { PlateElement } from "platejs/react";
@@ -107,6 +109,20 @@ const groups: Group[] = [
         insertBlock(editor, value, { upsert: true });
       },
     })),
+  },
+  {
+    group: "Insert",
+    items: [
+      {
+        icon: <Table2Icon />,
+        keywords: ["table", "grid", "rows", "columns"],
+        label: "Table",
+        value: KEYS.table,
+        onSelect: (editor) => {
+          insertTable(editor, { colCount: 3, rowCount: 3 }, { select: true });
+        },
+      },
+    ],
   },
 ];
 
