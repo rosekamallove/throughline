@@ -16,6 +16,7 @@ import {
   type DragStartEvent,
 } from "@dnd-kit/core";
 import {
+  arrayMove,
   SortableContext,
   sortableKeyboardCoordinates,
   useSortable,
@@ -23,7 +24,7 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { ChevronsLeftRight, ChevronsRightLeft, Plus } from "lucide-react";
+import { CalendarClock, ChevronsLeftRight, ChevronsRightLeft, Plus } from "lucide-react";
 import { LazyMotion, domAnimation, m } from "motion/react";
 import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
@@ -32,7 +33,7 @@ import { toast } from "sonner";
 import { OpenScriptButton } from "@/components/video/open-script-button";
 import { ThumbnailPackaging } from "@/components/video/thumbnail-packaging";
 import { VideoCardMenu } from "@/components/video/video-card-menu";
-import { formatCompact, timeAgo } from "@/lib/format";
+import { formatCompact, formatShortDate, timeAgo } from "@/lib/format";
 import { toggleColumnCollapsed, useBoardPrefs } from "@/lib/board-prefs";
 import { STAGES, STAGE_META, type Stage } from "@/lib/stages";
 import { cn } from "@/lib/utils";
@@ -101,6 +102,12 @@ function BoardCardBody({ video }: { video: Video }) {
               ? `${formatCompact(video.views)} views · ${timeAgo(video.publishedAt ?? video.createdAt)}`
               : (video.nextAction ?? timeAgo(video.createdAt))}
           </p>
+          {video.scheduledAt && (
+            <span className="mt-1.5 inline-flex items-center gap-1 rounded-md bg-muted px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground">
+              <CalendarClock className="size-3" />
+              {formatShortDate(video.scheduledAt)}
+            </span>
+          )}
         </div>
         <VideoCardMenu
           video={video}
@@ -256,8 +263,8 @@ export function VideoBoard({ videos }: { videos: Video[] }) {
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   );
 
-  const setStage = useMutation(
-    trpc.video.setStage.mutationOptions({
+  const reorder = useMutation(
+    trpc.video.reorder.mutationOptions({
       onError: (e) => {
         toast.error(e.message);
         void queryClient.invalidateQueries({ queryKey: trpc.video.list.queryKey() });
@@ -273,7 +280,12 @@ export function VideoBoard({ videos }: { videos: Video[] }) {
     return video ? video.stage : null;
   }
 
-  const byStage = (stage: Stage) => videos.filter((v) => v.stage === stage);
+  // Column order = manual position, newest first as the tiebreaker so unordered
+  // videos keep their old feel until dragged.
+  const orderedByStage = (stage: Stage) =>
+    videos
+      .filter((v) => v.stage === stage)
+      .sort((a, b) => a.position - b.position || b.createdAt.getTime() - a.createdAt.getTime());
 
   function handleDragStart(event: DragStartEvent) {
     const video = videos.find((v) => v.id === event.active.id);
@@ -289,17 +301,37 @@ export function VideoBoard({ videos }: { videos: Video[] }) {
 
   function handleDragEnd(event: DragEndEvent) {
     const video = activeVideo;
-    const toStage = event.over ? overStageRef.current : null;
+    const toStage = overStageRef.current;
     setActiveVideo(null);
     setDragOverStage(null);
     overStageRef.current = null;
-    if (!video || !toStage || video.stage === toStage) return;
+    if (!video || !toStage) return;
 
-    // Optimistic write BEFORE the mutation so the card never flashes back.
+    const current = orderedByStage(toStage).map((v) => v.id);
+    const overId = event.over ? String(event.over.id) : null;
+    const overIndex = !overId || overId === toStage ? current.length : current.indexOf(overId);
+
+    let orderedIds: string[];
+    if (video.stage === toStage) {
+      // Reorder within the same column.
+      const from = current.indexOf(video.id);
+      const to = overIndex === -1 ? current.length - 1 : overIndex;
+      if (from === to || from === -1) return;
+      orderedIds = arrayMove(current, from, to);
+    } else {
+      // Move into another column at the drop position.
+      const insertAt = overIndex === -1 ? current.length : overIndex;
+      orderedIds = [...current.slice(0, insertAt), video.id, ...current.slice(insertAt)];
+    }
+
+    // Optimistic: stamp the target column's stage + positions before the write.
+    const posOf = new Map(orderedIds.map((id, i) => [id, i]));
     queryClient.setQueryData(trpc.video.list.queryKey(), (old) =>
-      old?.map((v) => (v.id === video.id ? { ...v, stage: toStage } : v)),
+      old?.map((v) =>
+        posOf.has(v.id) ? { ...v, stage: toStage, position: posOf.get(v.id)! } : v,
+      ),
     );
-    setStage.mutate({ id: video.id, stage: toStage });
+    reorder.mutate({ stage: toStage, orderedIds });
   }
 
   function handleDragCancel() {
@@ -328,7 +360,7 @@ export function VideoBoard({ videos }: { videos: Video[] }) {
             <BoardColumn
               key={stage}
               stage={stage}
-              videos={byStage(stage)}
+              videos={orderedByStage(stage)}
               collapsed={collapsed[stage] ?? false}
               highlight={
                 dragOverStage === stage &&

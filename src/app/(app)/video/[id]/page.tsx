@@ -256,6 +256,21 @@ export default function VideoDetailPage({ params }: { params: Promise<{ id: stri
             <StatTile label="Est. CTR" value={estCtr != null ? `${estCtr}%` : "—"} />
           </div>
 
+          <div>
+            <p className="mono-label mb-2">Proposed release</p>
+            <input
+              type="date"
+              value={video.scheduledAt ? new Date(video.scheduledAt).toISOString().slice(0, 10) : ""}
+              onChange={(e) =>
+                updateVideo.mutate({
+                  id,
+                  scheduledAt: e.target.value ? new Date(e.target.value) : null,
+                })
+              }
+              className="w-full rounded-lg border bg-transparent px-3 py-2 text-[13px] outline-none transition-colors hover:border-ring focus:border-ring"
+            />
+          </div>
+
           <YouTubeLink videoId={id} youtubeVideoId={video.youtubeVideoId} />
         </div>
       </div>

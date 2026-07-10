@@ -45,6 +45,11 @@ export const videos = pgTable("videos", {
   thumbImageUrl: text("thumb_image_url"),
   /** 0–100, shown as the card progress bar for in-production stages. */
   progress: integer("progress").notNull().default(0),
+  /** Manual order within a kanban column (lower = higher). Ties break on
+   *  createdAt; the grid/feed still sorts by recency, not this. */
+  position: integer("position").notNull().default(0),
+  /** Optional planned publish date the creator sets; drives the calendar. */
+  scheduledAt: timestamp("scheduled_at", { withTimezone: true }),
   nextAction: text("next_action"),
   // Published-only stats (populated by the v1.1 YouTube sync).
   views: integer("views"),

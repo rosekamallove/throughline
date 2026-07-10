@@ -60,6 +60,7 @@ export const videoRouter = createTRPCRouter({
         packagingColor: z.string().max(20).nullable().optional(),
         thumbText: thumbTextSchema.nullable().optional(),
         progress: z.number().int().min(0).max(100).optional(),
+        scheduledAt: z.coerce.date().nullable().optional(),
       }),
     )
     .mutation(async ({ ctx, input }) => {
@@ -88,6 +89,29 @@ export const videoRouter = createTRPCRouter({
         .returning();
       if (!updated) throw new TRPCError({ code: "NOT_FOUND" });
       return updated;
+    }),
+
+  // Manual kanban order: writes the target column's order in one pass. Every id
+  // is stamped with `stage` (so a cross-column drag also moves the card) and its
+  // index as `position`. The source column needs no rewrite — it just sorts by
+  // the positions it already has, with the dragged card now gone.
+  reorder: protectedProcedure
+    .input(z.object({ stage: stageSchema, orderedIds: z.array(z.uuid()).min(1).max(500) }))
+    .mutation(async ({ ctx, input }) => {
+      await ctx.db.transaction(async (tx) => {
+        for (let i = 0; i < input.orderedIds.length; i++) {
+          await tx
+            .update(videos)
+            .set({ stage: input.stage, position: i, updatedAt: new Date() })
+            .where(
+              and(
+                eq(videos.id, input.orderedIds[i]),
+                eq(videos.userId, ctx.session.user.id),
+              ),
+            );
+        }
+      });
+      return { stage: input.stage, count: input.orderedIds.length };
     }),
 
   delete: protectedProcedure

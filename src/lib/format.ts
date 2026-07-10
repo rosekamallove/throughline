@@ -4,6 +4,13 @@ export function formatCompact(n: number): string {
   return compact.format(n);
 }
 
+const shortDate = new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric" });
+
+/** "Jul 12" — for release-date chips and the calendar. */
+export function formatShortDate(date: Date): string {
+  return shortDate.format(date);
+}
+
 export function timeAgo(date: Date): string {
   const seconds = Math.floor((Date.now() - date.getTime()) / 1000);
   const steps: [number, string][] = [
