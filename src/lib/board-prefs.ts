@@ -9,7 +9,7 @@ import { useSyncExternalStore } from "react";
  */
 
 interface BoardPrefs {
-  view: "grid" | "board";
+  view: "grid" | "board" | "calendar";
   collapsed: Record<string, boolean>;
 }
 

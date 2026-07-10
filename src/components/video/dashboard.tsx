@@ -3,6 +3,7 @@
 import { useQuery } from "@tanstack/react-query";
 import {
   Calendar,
+  CalendarDays,
   Check,
   Clock,
   EyeOff,
@@ -16,6 +17,7 @@ import {
 import { useState } from "react";
 
 import { VideoBoard } from "@/components/video/video-board";
+import { VideoCalendar } from "@/components/video/video-calendar";
 import { VideoCard } from "@/components/video/video-card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -61,12 +63,12 @@ export function Dashboard() {
     return listed.filter((v) => v.stage === filter);
   })();
 
-  const isBoard = prefs.view === "board";
+  const view = prefs.view;
 
   return (
     <div className="flex h-full flex-col gap-5 px-6 pb-4 pt-5">
       <div className="flex flex-wrap items-center gap-3">
-        {!isBoard && (
+        {view === "grid" && (
           <Tabs value={filter} onValueChange={(v) => setFilter(v as FilterKey)}>
             <TabsList className="h-auto flex-wrap">
               {FILTERS.map((f) => {
@@ -83,26 +85,27 @@ export function Dashboard() {
         )}
 
         <div className="ml-auto flex items-center rounded-lg border p-0.5">
-          <button
-            aria-label="Grid view"
-            onClick={() => setPrefs({ view: "grid" })}
-            className={cn(
-              "rounded-md p-1.5 transition-colors",
-              !isBoard ? "bg-accent text-foreground" : "text-muted-foreground hover:text-foreground",
-            )}
-          >
-            <LayoutGrid className="size-4" />
-          </button>
-          <button
-            aria-label="Board view"
-            onClick={() => setPrefs({ view: "board" })}
-            className={cn(
-              "rounded-md p-1.5 transition-colors",
-              isBoard ? "bg-accent text-foreground" : "text-muted-foreground hover:text-foreground",
-            )}
-          >
-            <Kanban className="size-4" />
-          </button>
+          {(
+            [
+              { key: "grid", label: "Grid view", Icon: LayoutGrid },
+              { key: "board", label: "Board view", Icon: Kanban },
+              { key: "calendar", label: "Calendar view", Icon: CalendarDays },
+            ] as const
+          ).map(({ key, label, Icon }) => (
+            <button
+              key={key}
+              aria-label={label}
+              onClick={() => setPrefs({ view: key })}
+              className={cn(
+                "rounded-md p-1.5 transition-colors",
+                view === key
+                  ? "bg-accent text-foreground"
+                  : "text-muted-foreground hover:text-foreground",
+              )}
+            >
+              <Icon className="size-4" />
+            </button>
+          ))}
         </div>
       </div>
 
@@ -116,8 +119,10 @@ export function Dashboard() {
             </div>
           ))}
         </div>
-      ) : isBoard ? (
+      ) : view === "board" ? (
         <VideoBoard videos={listed} />
+      ) : view === "calendar" ? (
+        <VideoCalendar videos={listed} />
       ) : visible.length === 0 ? (
         <div className="flex flex-col items-center gap-2 py-24 text-center">
           <p className="text-lg font-medium">Nothing here yet</p>
