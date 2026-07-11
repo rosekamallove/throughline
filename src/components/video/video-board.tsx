@@ -252,7 +252,7 @@ function QuickAddCard() {
 export function VideoBoard({ videos }: { videos: Video[] }) {
   const trpc = useTRPC();
   const queryClient = useQueryClient();
-  const [{ collapsed }] = useBoardPrefs();
+  const [{ collapsed, sort }, setPrefs] = useBoardPrefs();
   const [activeVideo, setActiveVideo] = useState<Video | null>(null);
   const overStageRef = useRef<Stage | null>(null);
   const [dragOverStage, setDragOverStage] = useState<Stage | null>(null);
@@ -263,14 +263,24 @@ export function VideoBoard({ videos }: { videos: Video[] }) {
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   );
 
+  const invalidate = () =>
+    void queryClient.invalidateQueries({ queryKey: trpc.video.list.queryKey() });
   const reorder = useMutation(
     trpc.video.reorder.mutationOptions({
       onError: (e) => {
         toast.error(e.message);
-        void queryClient.invalidateQueries({ queryKey: trpc.video.list.queryKey() });
+        invalidate();
       },
-      onSettled: () =>
-        void queryClient.invalidateQueries({ queryKey: trpc.video.list.queryKey() }),
+      onSettled: invalidate,
+    }),
+  );
+  const setStage = useMutation(
+    trpc.video.setStage.mutationOptions({
+      onError: (e) => {
+        toast.error(e.message);
+        invalidate();
+      },
+      onSettled: invalidate,
     }),
   );
 
@@ -280,12 +290,25 @@ export function VideoBoard({ videos }: { videos: Video[] }) {
     return video ? video.stage : null;
   }
 
-  // Column order = manual position, newest first as the tiebreaker so unordered
-  // videos keep their old feel until dragged.
-  const orderedByStage = (stage: Stage) =>
-    videos
-      .filter((v) => v.stage === stage)
-      .sort((a, b) => a.position - b.position || b.createdAt.getTime() - a.createdAt.getTime());
+  // Column order depends on the chosen sort. "custom" = manual drag position;
+  // "created"/"published" = by date. Newest createdAt is the shared tiebreaker.
+  const orderedByStage = (stage: Stage) => {
+    const list = videos.filter((v) => v.stage === stage);
+    const byCreated = (a: Video, b: Video) => b.createdAt.getTime() - a.createdAt.getTime();
+    if (sort === "created") return list.sort(byCreated);
+    if (sort === "published") {
+      const dateOf = (v: Video) => v.publishedAt ?? v.scheduledAt;
+      return list.sort((a, b) => {
+        const da = dateOf(a);
+        const db = dateOf(b);
+        if (da && db) return db.getTime() - da.getTime(); // most recent / furthest out first
+        if (da) return -1; // dated videos before undated
+        if (db) return 1;
+        return byCreated(a, b);
+      });
+    }
+    return list.sort((a, b) => a.position - b.position || byCreated(a, b));
+  };
 
   function handleDragStart(event: DragStartEvent) {
     const video = videos.find((v) => v.id === event.active.id);
@@ -307,19 +330,30 @@ export function VideoBoard({ videos }: { videos: Video[] }) {
     overStageRef.current = null;
     if (!video || !toStage) return;
 
+    const sameColumn = video.stage === toStage;
+
+    // In a date sort, a cross-column drag just moves stage — the date decides
+    // the slot. A within-column drag there means "I want my own order", so it
+    // seeds a custom order and flips the sort to custom.
+    if (sort !== "custom" && !sameColumn) {
+      queryClient.setQueryData(trpc.video.list.queryKey(), (old) =>
+        old?.map((v) => (v.id === video.id ? { ...v, stage: toStage } : v)),
+      );
+      setStage.mutate({ id: video.id, stage: toStage });
+      return;
+    }
+
     const current = orderedByStage(toStage).map((v) => v.id);
     const overId = event.over ? String(event.over.id) : null;
     const overIndex = !overId || overId === toStage ? current.length : current.indexOf(overId);
 
     let orderedIds: string[];
-    if (video.stage === toStage) {
-      // Reorder within the same column.
+    if (sameColumn) {
       const from = current.indexOf(video.id);
       const to = overIndex === -1 ? current.length - 1 : overIndex;
       if (from === to || from === -1) return;
       orderedIds = arrayMove(current, from, to);
     } else {
-      // Move into another column at the drop position.
       const insertAt = overIndex === -1 ? current.length : overIndex;
       orderedIds = [...current.slice(0, insertAt), video.id, ...current.slice(insertAt)];
     }
@@ -331,6 +365,7 @@ export function VideoBoard({ videos }: { videos: Video[] }) {
         posOf.has(v.id) ? { ...v, stage: toStage, position: posOf.get(v.id)! } : v,
       ),
     );
+    if (sort !== "custom") setPrefs({ sort: "custom" });
     reorder.mutate({ stage: toStage, orderedIds });
   }
 

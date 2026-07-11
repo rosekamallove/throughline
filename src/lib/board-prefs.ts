@@ -8,13 +8,16 @@ import { useSyncExternalStore } from "react";
  * hydration clean (server snapshot = defaults).
  */
 
+export type BoardSort = "custom" | "created" | "published";
+
 interface BoardPrefs {
   view: "grid" | "board" | "calendar";
+  sort: BoardSort;
   collapsed: Record<string, boolean>;
 }
 
 const STORAGE_KEY = "throughline:boardPrefs";
-const DEFAULTS: BoardPrefs = { view: "grid", collapsed: {} };
+const DEFAULTS: BoardPrefs = { view: "grid", sort: "custom", collapsed: {} };
 
 let state: BoardPrefs | null = null;
 const listeners = new Set<() => void>();

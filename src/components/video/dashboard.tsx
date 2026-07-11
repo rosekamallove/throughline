@@ -19,9 +19,16 @@ import { useState } from "react";
 import { VideoBoard } from "@/components/video/video-board";
 import { VideoCalendar } from "@/components/video/video-calendar";
 import { VideoCard } from "@/components/video/video-card";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useBoardPrefs } from "@/lib/board-prefs";
+import { useBoardPrefs, type BoardSort } from "@/lib/board-prefs";
 import { FILTERS, type FilterKey } from "@/lib/stages";
 import { cn } from "@/lib/utils";
 import { useTRPC } from "@/trpc/client";
@@ -82,6 +89,23 @@ export function Dashboard() {
               })}
             </TabsList>
           </Tabs>
+        )}
+
+        {view === "board" && (
+          <Select
+            value={prefs.sort}
+            onValueChange={(v) => setPrefs({ sort: v as BoardSort })}
+          >
+            <SelectTrigger size="sm" className="gap-1.5">
+              <span className="text-muted-foreground">Sort</span>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="custom">Custom order</SelectItem>
+              <SelectItem value="created">Creation date</SelectItem>
+              <SelectItem value="published">Publish date</SelectItem>
+            </SelectContent>
+          </Select>
         )}
 
         <div className="ml-auto flex items-center rounded-lg border p-0.5">
