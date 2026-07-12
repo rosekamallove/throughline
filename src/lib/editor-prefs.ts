@@ -9,6 +9,9 @@ interface EditorPrefs {
   leftWidth: number;
   rightWidth: number;
   timeline: boolean;
+  /** Rails can be hidden for a full-width script (e.g. vertical/split screen). */
+  leftOpen: boolean;
+  rightOpen: boolean;
 }
 
 export const RAIL_LIMITS = {
@@ -17,7 +20,13 @@ export const RAIL_LIMITS = {
 } as const;
 
 const STORAGE_KEY = "throughline:editorPrefs";
-const DEFAULTS: EditorPrefs = { leftWidth: 284, rightWidth: 318, timeline: false };
+const DEFAULTS: EditorPrefs = {
+  leftWidth: 284,
+  rightWidth: 318,
+  timeline: false,
+  leftOpen: true,
+  rightOpen: true,
+};
 
 let state: EditorPrefs | null = null;
 const listeners = new Set<() => void>();
@@ -32,6 +41,8 @@ function load(): EditorPrefs {
       rightWidth:
         typeof parsed.rightWidth === "number" ? parsed.rightWidth : DEFAULTS.rightWidth,
       timeline: typeof parsed.timeline === "boolean" ? parsed.timeline : DEFAULTS.timeline,
+      leftOpen: typeof parsed.leftOpen === "boolean" ? parsed.leftOpen : DEFAULTS.leftOpen,
+      rightOpen: typeof parsed.rightOpen === "boolean" ? parsed.rightOpen : DEFAULTS.rightOpen,
     };
   } catch {
     state = DEFAULTS;

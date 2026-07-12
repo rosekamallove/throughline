@@ -5,7 +5,14 @@ import type { Value } from "platejs";
 import { use, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
-import { Clapperboard, Film } from "lucide-react";
+import {
+  Clapperboard,
+  Film,
+  PanelLeftClose,
+  PanelLeftOpen,
+  PanelRightClose,
+  PanelRightOpen,
+} from "lucide-react";
 
 import { BeatBlock } from "@/components/script/beat-block";
 import { CoachPanel } from "@/components/script/coach-panel";
@@ -429,38 +436,70 @@ export default function ScriptEditorPage({ params }: { params: Promise<{ id: str
         </div>
       </div>
       <div className={cn("flex min-h-0 flex-1", dragging && "cursor-col-resize select-none")}>
-        <div className="flex shrink-0" style={{ width: rails.leftWidth }}>
-          <OutlineRail
-          video={video}
-          beats={timed}
-          customKinds={customKinds}
-          activeId={activeId}
-          totalWords={totalWords}
-          totalSec={totalSec}
-          saving={pendingSaves > 0}
-          onSelect={setActiveId}
-          onReorder={(orderedIds) => reorder.mutate({ videoId, orderedIds })}
-          onAddBeat={(kind: BeatKind) =>
-            createBeat.mutate({
-              videoId,
-              kind,
-              label: resolveBeatMeta(kind, customKinds).label,
-              afterPosition: activeBeat?.position ?? timed.length - 1,
-            })
-          }
-          onCustomize={() => setKindsOpen(true)}
-          />
-        </div>
-        <RailResizeHandle
-          active={dragging === "left"}
-          onPointerDown={(e) => startRailResize(e, "left")}
-        />
+        {rails.leftOpen && (
+          <>
+            <div className="flex shrink-0" style={{ width: rails.leftWidth }}>
+              <OutlineRail
+                video={video}
+                beats={timed}
+                customKinds={customKinds}
+                activeId={activeId}
+                totalWords={totalWords}
+                totalSec={totalSec}
+                saving={pendingSaves > 0}
+                onSelect={setActiveId}
+                onReorder={(orderedIds) => reorder.mutate({ videoId, orderedIds })}
+                onAddBeat={(kind: BeatKind) =>
+                  createBeat.mutate({
+                    videoId,
+                    kind,
+                    label: resolveBeatMeta(kind, customKinds).label,
+                    afterPosition: activeBeat?.position ?? timed.length - 1,
+                  })
+                }
+                onCustomize={() => setKindsOpen(true)}
+              />
+            </div>
+            <RailResizeHandle
+              active={dragging === "left"}
+              onPointerDown={(e) => startRailResize(e, "left")}
+            />
+          </>
+        )}
 
         <main className="min-w-0 flex-1 overflow-y-auto">
           <div className="mx-auto max-w-[700px] px-8 pb-24 pt-10">
             <div className="mb-2 flex items-center justify-between">
               <p className="mono-label">Script</p>
               <div className="flex items-center gap-1.5">
+                <Button
+                  variant="ghost"
+                  size="icon-sm"
+                  aria-label={rails.leftOpen ? "Hide outline" : "Show outline"}
+                  aria-pressed={!rails.leftOpen}
+                  className="active:scale-[0.97]"
+                  onClick={() => setRails({ leftOpen: !rails.leftOpen })}
+                >
+                  {rails.leftOpen ? (
+                    <PanelLeftClose className="size-4" />
+                  ) : (
+                    <PanelLeftOpen className="size-4" />
+                  )}
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon-sm"
+                  aria-label={rails.rightOpen ? "Hide panel" : "Show panel"}
+                  aria-pressed={!rails.rightOpen}
+                  className="mr-0.5 active:scale-[0.97]"
+                  onClick={() => setRails({ rightOpen: !rails.rightOpen })}
+                >
+                  {rails.rightOpen ? (
+                    <PanelRightClose className="size-4" />
+                  ) : (
+                    <PanelRightOpen className="size-4" />
+                  )}
+                </Button>
                 <Button
                   variant="secondary"
                   size="sm"
@@ -564,32 +603,36 @@ export default function ScriptEditorPage({ params }: { params: Promise<{ id: str
           </div>
         </main>
 
-        <RailResizeHandle
-          active={dragging === "right"}
-          onPointerDown={(e) => startRailResize(e, "right")}
-        />
-        <div className="flex shrink-0" style={{ width: rails.rightWidth }}>
-          <CoachPanel
-            beats={timed}
-            customKinds={customKinds}
-            activeBeat={activeBeat}
-            onSelectBeat={setActiveId}
-            onSetBroll={(beatId: string, broll: BrollItem[]) =>
-              setBroll.mutate({ id: beatId, broll })
-            }
-            onRemoveShot={removeShot}
-            onSetComments={(beatId: string, comments: CommentItem[]) =>
-              setComments.mutate({ id: beatId, comments })
-            }
-            onRemoveComment={removeComment}
-            focusShotId={focusShotId}
-            onFocusShotHandled={() => setFocusShotId(null)}
-            focusCommentId={focusCommentId}
-            onFocusCommentHandled={() => setFocusCommentId(null)}
-          >
-            <ResearchRail videoId={videoId} />
-          </CoachPanel>
-        </div>
+        {rails.rightOpen && (
+          <>
+            <RailResizeHandle
+              active={dragging === "right"}
+              onPointerDown={(e) => startRailResize(e, "right")}
+            />
+            <div className="flex shrink-0" style={{ width: rails.rightWidth }}>
+              <CoachPanel
+                beats={timed}
+                customKinds={customKinds}
+                activeBeat={activeBeat}
+                onSelectBeat={setActiveId}
+                onSetBroll={(beatId: string, broll: BrollItem[]) =>
+                  setBroll.mutate({ id: beatId, broll })
+                }
+                onRemoveShot={removeShot}
+                onSetComments={(beatId: string, comments: CommentItem[]) =>
+                  setComments.mutate({ id: beatId, comments })
+                }
+                onRemoveComment={removeComment}
+                focusShotId={focusShotId}
+                onFocusShotHandled={() => setFocusShotId(null)}
+                focusCommentId={focusCommentId}
+                onFocusCommentHandled={() => setFocusCommentId(null)}
+              >
+                <ResearchRail videoId={videoId} />
+              </CoachPanel>
+            </div>
+          </>
+        )}
       </div>
 
       <ManageKindsDialog open={kindsOpen} onOpenChange={setKindsOpen} customKinds={customKinds} />
