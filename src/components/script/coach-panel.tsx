@@ -1,6 +1,6 @@
 "use client";
 
-import { Plus, X } from "lucide-react";
+import { PanelRightClose, Plus, X } from "lucide-react";
 import { useState } from "react";
 
 import { PacingBar, type TimedBeat } from "@/components/script/pacing-bar";
@@ -29,6 +29,7 @@ export function CoachPanel({
   onFocusShotHandled,
   focusCommentId,
   onFocusCommentHandled,
+  onCollapse,
   children,
 }: {
   beats: TimedBeat[];
@@ -43,6 +44,7 @@ export function CoachPanel({
   onFocusShotHandled?: () => void;
   focusCommentId?: string | null;
   onFocusCommentHandled?: () => void;
+  onCollapse?: () => void;
   children?: React.ReactNode;
 }) {
   const [newShot, setNewShot] = useState("");
@@ -61,7 +63,18 @@ export function CoachPanel({
   return (
     <aside className="flex w-full shrink-0 flex-col gap-6 overflow-y-auto border-l p-5">
       <section>
-        <p className="mono-label mb-3">Pacing</p>
+        <div className="mb-3 flex items-center justify-between">
+          <p className="mono-label">Pacing</p>
+          {onCollapse && (
+            <button
+              aria-label="Hide panel"
+              onClick={onCollapse}
+              className="-mr-1 rounded-md p-1 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+            >
+              <PanelRightClose className="size-4" />
+            </button>
+          )}
+        </div>
         <PacingBar
           beats={beats}
           customKinds={customKinds}

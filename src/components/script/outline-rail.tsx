@@ -17,7 +17,15 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { ArrowLeft, Check, Copy, GripVertical, Plus, Settings2 } from "lucide-react";
+import {
+  ArrowLeft,
+  Check,
+  Copy,
+  GripVertical,
+  PanelLeftClose,
+  Plus,
+  Settings2,
+} from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -140,6 +148,7 @@ export function OutlineRail({
   onReorder,
   onAddBeat,
   onCustomize,
+  onCollapse,
 }: {
   video: VideoDetail;
   beats: TimedBeat[];
@@ -152,6 +161,7 @@ export function OutlineRail({
   onReorder: (orderedIds: string[]) => void;
   onAddBeat: (kind: BeatKind) => void;
   onCustomize: () => void;
+  onCollapse?: () => void;
 }) {
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
@@ -177,15 +187,26 @@ export function OutlineRail({
         >
           <ArrowLeft className="size-4" /> Back
         </Link>
-        <span className="flex items-center gap-1.5 text-[12px] text-muted-foreground">
-          <span
-            className={cn(
-              "size-2 rounded-full",
-              saving ? "animate-pulse bg-stage-editing" : "bg-saved-dot",
-            )}
-          />
-          {saving ? "Saving…" : "Saved"}
-        </span>
+        <div className="flex items-center gap-1">
+          <span className="flex items-center gap-1.5 text-[12px] text-muted-foreground">
+            <span
+              className={cn(
+                "size-2 rounded-full",
+                saving ? "animate-pulse bg-stage-editing" : "bg-saved-dot",
+              )}
+            />
+            {saving ? "Saving…" : "Saved"}
+          </span>
+          {onCollapse && (
+            <button
+              aria-label="Hide outline"
+              onClick={onCollapse}
+              className="rounded-md p-1 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+            >
+              <PanelLeftClose className="size-4" />
+            </button>
+          )}
+        </div>
       </div>
 
       <Link href={`/video/${video.id}`} className="flex flex-col gap-3">

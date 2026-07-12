@@ -5,14 +5,7 @@ import type { Value } from "platejs";
 import { use, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
-import {
-  Clapperboard,
-  Film,
-  PanelLeftClose,
-  PanelLeftOpen,
-  PanelRightClose,
-  PanelRightOpen,
-} from "lucide-react";
+import { Clapperboard, Film, PanelLeftOpen, PanelRightOpen } from "lucide-react";
 
 import { BeatBlock } from "@/components/script/beat-block";
 import { CoachPanel } from "@/components/script/coach-panel";
@@ -20,6 +13,8 @@ import { ListenControls } from "@/components/script/listen-controls";
 import { ManageKindsDialog } from "@/components/script/manage-kinds-dialog";
 import { OutlineRail } from "@/components/script/outline-rail";
 import type { TimedBeat } from "@/components/script/pacing-bar";
+import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
+import { useIsMobile } from "@/lib/use-media-query";
 import { Prompter } from "@/components/script/prompter";
 import { ResearchRail } from "@/components/script/research-rail";
 import { Timeline } from "@/components/script/timeline";
@@ -66,6 +61,10 @@ export default function ScriptEditorPage({ params }: { params: Promise<{ id: str
   const [focusCommentId, setFocusCommentId] = useState<string | null>(null);
   const [rails, setRails] = useEditorPrefs();
   const [prompterOpen, setPrompterOpen] = useState(false);
+  // On phones the fixed-width rails would crowd out the script, so they open as
+  // slide-over sheets instead of inline columns.
+  const isMobile = useIsMobile();
+  const [mobileRail, setMobileRail] = useState<"left" | "right" | null>(null);
 
   // "all", a beat id, or null. speechSynthesis is a global singleton, so one
   // piece of state arbitrates the whole-script and per-beat controls.
@@ -412,6 +411,44 @@ export default function ScriptEditorPage({ params }: { params: Promise<{ id: str
     );
   }
 
+  // Shared so each rail renders identically whether inline (desktop) or in a
+  // slide-over sheet (mobile); only onCollapse differs by context.
+  const outlineProps = {
+    video,
+    beats: timed,
+    customKinds,
+    activeId,
+    totalWords,
+    totalSec,
+    saving: pendingSaves > 0,
+    onSelect: setActiveId,
+    onReorder: (orderedIds: string[]) => reorder.mutate({ videoId, orderedIds }),
+    onAddBeat: (kind: BeatKind) =>
+      createBeat.mutate({
+        videoId,
+        kind,
+        label: resolveBeatMeta(kind, customKinds).label,
+        afterPosition: activeBeat?.position ?? timed.length - 1,
+      }),
+    onCustomize: () => setKindsOpen(true),
+  };
+
+  const coachProps = {
+    beats: timed,
+    customKinds,
+    activeBeat,
+    onSelectBeat: setActiveId,
+    onSetBroll: (beatId: string, broll: BrollItem[]) => setBroll.mutate({ id: beatId, broll }),
+    onRemoveShot: removeShot,
+    onSetComments: (beatId: string, comments: CommentItem[]) =>
+      setComments.mutate({ id: beatId, comments }),
+    onRemoveComment: removeComment,
+    focusShotId,
+    onFocusShotHandled: () => setFocusShotId(null),
+    focusCommentId,
+    onFocusCommentHandled: () => setFocusCommentId(null),
+  };
+
   return (
     <div className="flex h-full min-h-0 flex-col">
       {/* Animate the row height (0fr↔1fr) so toggling the timeline slides the
@@ -436,35 +473,22 @@ export default function ScriptEditorPage({ params }: { params: Promise<{ id: str
         </div>
       </div>
       <div className={cn("flex min-h-0 flex-1", dragging && "cursor-col-resize select-none")}>
-        {rails.leftOpen && (
+        {!isMobile && rails.leftOpen ? (
           <>
             <div className="flex shrink-0" style={{ width: rails.leftWidth }}>
-              <OutlineRail
-                video={video}
-                beats={timed}
-                customKinds={customKinds}
-                activeId={activeId}
-                totalWords={totalWords}
-                totalSec={totalSec}
-                saving={pendingSaves > 0}
-                onSelect={setActiveId}
-                onReorder={(orderedIds) => reorder.mutate({ videoId, orderedIds })}
-                onAddBeat={(kind: BeatKind) =>
-                  createBeat.mutate({
-                    videoId,
-                    kind,
-                    label: resolveBeatMeta(kind, customKinds).label,
-                    afterPosition: activeBeat?.position ?? timed.length - 1,
-                  })
-                }
-                onCustomize={() => setKindsOpen(true)}
-              />
+              <OutlineRail {...outlineProps} onCollapse={() => setRails({ leftOpen: false })} />
             </div>
             <RailResizeHandle
               active={dragging === "left"}
               onPointerDown={(e) => startRailResize(e, "left")}
             />
           </>
+        ) : (
+          <RailStrip
+            side="left"
+            label="Outline"
+            onExpand={() => (isMobile ? setMobileRail("left") : setRails({ leftOpen: true }))}
+          />
         )}
 
         <main className="min-w-0 flex-1 overflow-y-auto">
@@ -472,34 +496,6 @@ export default function ScriptEditorPage({ params }: { params: Promise<{ id: str
             <div className="mb-2 flex items-center justify-between">
               <p className="mono-label">Script</p>
               <div className="flex items-center gap-1.5">
-                <Button
-                  variant="ghost"
-                  size="icon-sm"
-                  aria-label={rails.leftOpen ? "Hide outline" : "Show outline"}
-                  aria-pressed={!rails.leftOpen}
-                  className="active:scale-[0.97]"
-                  onClick={() => setRails({ leftOpen: !rails.leftOpen })}
-                >
-                  {rails.leftOpen ? (
-                    <PanelLeftClose className="size-4" />
-                  ) : (
-                    <PanelLeftOpen className="size-4" />
-                  )}
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon-sm"
-                  aria-label={rails.rightOpen ? "Hide panel" : "Show panel"}
-                  aria-pressed={!rails.rightOpen}
-                  className="mr-0.5 active:scale-[0.97]"
-                  onClick={() => setRails({ rightOpen: !rails.rightOpen })}
-                >
-                  {rails.rightOpen ? (
-                    <PanelRightClose className="size-4" />
-                  ) : (
-                    <PanelRightOpen className="size-4" />
-                  )}
-                </Button>
                 <Button
                   variant="secondary"
                   size="sm"
@@ -603,37 +599,56 @@ export default function ScriptEditorPage({ params }: { params: Promise<{ id: str
           </div>
         </main>
 
-        {rails.rightOpen && (
+        {!isMobile && rails.rightOpen ? (
           <>
             <RailResizeHandle
               active={dragging === "right"}
               onPointerDown={(e) => startRailResize(e, "right")}
             />
             <div className="flex shrink-0" style={{ width: rails.rightWidth }}>
-              <CoachPanel
-                beats={timed}
-                customKinds={customKinds}
-                activeBeat={activeBeat}
-                onSelectBeat={setActiveId}
-                onSetBroll={(beatId: string, broll: BrollItem[]) =>
-                  setBroll.mutate({ id: beatId, broll })
-                }
-                onRemoveShot={removeShot}
-                onSetComments={(beatId: string, comments: CommentItem[]) =>
-                  setComments.mutate({ id: beatId, comments })
-                }
-                onRemoveComment={removeComment}
-                focusShotId={focusShotId}
-                onFocusShotHandled={() => setFocusShotId(null)}
-                focusCommentId={focusCommentId}
-                onFocusCommentHandled={() => setFocusCommentId(null)}
-              >
+              <CoachPanel {...coachProps} onCollapse={() => setRails({ rightOpen: false })}>
                 <ResearchRail videoId={videoId} />
               </CoachPanel>
             </div>
           </>
+        ) : (
+          <RailStrip
+            side="right"
+            label="Coach"
+            onExpand={() => (isMobile ? setMobileRail("right") : setRails({ rightOpen: true }))}
+          />
         )}
       </div>
+
+      {/* Mobile: rails open as slide-over sheets so the script keeps full width. */}
+      {isMobile && (
+        <>
+          <Sheet
+            open={mobileRail === "left"}
+            onOpenChange={(o) => setMobileRail(o ? "left" : null)}
+          >
+            <SheetContent side="left" showCloseButton={false} className="w-[86%] max-w-sm gap-0 p-0">
+              <SheetTitle className="sr-only">Outline</SheetTitle>
+              <div className="flex h-full min-h-0">
+                <OutlineRail {...outlineProps} onCollapse={() => setMobileRail(null)} />
+              </div>
+            </SheetContent>
+          </Sheet>
+          <Sheet
+            open={mobileRail === "right"}
+            onOpenChange={(o) => setMobileRail(o ? "right" : null)}
+          >
+            <SheetContent side="right" showCloseButton={false} className="w-[86%] max-w-sm gap-0 p-0">
+              <SheetTitle className="sr-only">Coach</SheetTitle>
+              <div className="flex h-full min-h-0">
+                <CoachPanel {...coachProps} onCollapse={() => setMobileRail(null)}>
+                  <ResearchRail videoId={videoId} />
+                </CoachPanel>
+              </div>
+            </SheetContent>
+          </Sheet>
+        </>
+      )}
 
       <ManageKindsDialog open={kindsOpen} onOpenChange={setKindsOpen} customKinds={customKinds} />
 
@@ -652,6 +667,33 @@ export default function ScriptEditorPage({ params }: { params: Promise<{ id: str
 
 /** Invisible 8px strip straddling a rail border; shows an accent line on
  *  hover/drag. touch-none keeps pointer capture stable while dragging. */
+/** Thin bar shown in place of a collapsed rail — click to reveal it. */
+function RailStrip({
+  side,
+  label,
+  onExpand,
+}: {
+  side: "left" | "right";
+  label: string;
+  onExpand: () => void;
+}) {
+  const Icon = side === "left" ? PanelLeftOpen : PanelRightOpen;
+  return (
+    <button
+      onClick={onExpand}
+      aria-label={`Show ${label.toLowerCase()}`}
+      title={`Show ${label.toLowerCase()}`}
+      className={cn(
+        "flex w-9 shrink-0 flex-col items-center gap-3 py-3.5 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground",
+        side === "left" ? "border-r border-border" : "border-l border-border",
+      )}
+    >
+      <Icon className="size-4" />
+      <span className="mono-label [writing-mode:sideways-rl]">{label}</span>
+    </button>
+  );
+}
+
 function RailResizeHandle({
   active,
   onPointerDown,

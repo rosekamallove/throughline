@@ -74,21 +74,23 @@ export function Dashboard() {
 
   return (
     <div className="flex h-full flex-col gap-5 px-6 pb-4 pt-5">
-      <div className="flex flex-wrap items-center gap-3">
+      <div className="flex items-center gap-3">
         {view === "grid" && (
-          <Tabs value={filter} onValueChange={(v) => setFilter(v as FilterKey)}>
-            <TabsList className="h-auto flex-wrap">
-              {FILTERS.map((f) => {
-                const Icon = FILTER_ICONS[f.key];
-                return (
-                  <TabsTrigger key={f.key} value={f.key} className="gap-1.5">
-                    <Icon className="size-3.5" />
-                    {f.label}
-                  </TabsTrigger>
-                );
-              })}
-            </TabsList>
-          </Tabs>
+          <div className="min-w-0 flex-1 overflow-x-auto">
+            <Tabs value={filter} onValueChange={(v) => setFilter(v as FilterKey)}>
+              <TabsList className="w-max">
+                {FILTERS.map((f) => {
+                  const Icon = FILTER_ICONS[f.key];
+                  return (
+                    <TabsTrigger key={f.key} value={f.key} className="gap-1.5">
+                      <Icon className="size-3.5" />
+                      {f.label}
+                    </TabsTrigger>
+                  );
+                })}
+              </TabsList>
+            </Tabs>
+          </div>
         )}
 
         {view === "board" && (
@@ -108,7 +110,7 @@ export function Dashboard() {
           </Select>
         )}
 
-        <div className="ml-auto flex items-center rounded-lg border p-0.5">
+        <div className="ml-auto flex shrink-0 items-center rounded-lg border p-0.5">
           {(
             [
               { key: "grid", label: "Grid view", Icon: LayoutGrid },
